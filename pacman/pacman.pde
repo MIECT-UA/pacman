@@ -19,6 +19,7 @@ float vx, vy;
 int fantasmas = 4;
 float[][] pFantasmas = new float[fantasmas][2];
 
+int[][] map;
 List<float[]> pontos = new ArrayList<float[]>();
 
 boolean gameStarted = false;
@@ -52,6 +53,9 @@ void setup() {
   py = centroY(1);
   pRaio = tamanho / 2;                                                            /// pacman size //(tamanho - espacamento) / 1.5
   
+  map = new int[nLin][nCol];
+  
+  // Inicializar os fantasmas
   pFantasmas[0][0] = centroX(nLin/2);
   pFantasmas[0][1] = centroY(nCol/2);
   
@@ -70,7 +74,6 @@ void setup() {
   
   
   frameRate(60);
-  
   
   // o codigo abaixo corre uma vez para definir o ArrayList de Pontos
   desenharLabirinto();  
@@ -178,48 +181,61 @@ void moverPacman() {
 // 3 for change left (ip) and 4 for change right (ip)
 void orientarPacman(int direction) {
   
+         int x = (int)Math.round((px + 0.5)/tamanho);
+         int y = (int)Math.round((py + 0.5)/tamanho);
+         
   switch (direction) {
-    case 1: // up
-      vx = 0;
-      vy = -1 * dificuldade;
-      break;
-    case 2: //down
-      vx = 0;
-      vy = 1 * dificuldade;
-      break;
-    case 3: // left
-      vy = 0;
-      vx = -1 * dificuldade;
-      break;
-    case 4: // right
-      vy = 0;
-      vx = 1 * dificuldade;
-      break;
-  }
-
-  // detetar margens
-  if(px > centroX(nCol)) {
-    vx = -vx;
-  } else if(px < centroX(1)) {
-    vx = -vx;
-  }
-  if(py > centroY(nLin)) {
-    vy = -vy;
-  } else if(py < centroY(1)) {
-    vy = -vy;
-  }
-  
-  // detetar obstaculos
-  float[] extremesX = {px, px-pRaio/2, px+pRaio/2};
-  float[] extremesY = {py, py-pRaio/2, py+pRaio/2};
-  for(int i = 0; i < 3; i++) { // 3 = nr de elementos em cada array
-    for(int j = 0; j < 3; j++) {
-      color c = get((int)extremesX[i], (int)extremesY[j]);
-      if(c == corObstaculos && ((vx != 0) || (vy != 0))) {
+      
+    case 1: // up 
+      // check for collisons
+      if ((y > 1) && (get((int)centroX(x), (int)centroY(y-1)) != corObstaculos)) { // 
+        vx = 0;
+        vy = -1 * dificuldade;
+        px = centroX(x);
+      } else { 
         vx = 0;
         vy = 0;
       }
-    }
+      break;
+    case 2: //down
+      if ((y < nLin) && (get((int)centroX(x), (int)centroY(y+1)) != corObstaculos)) { // 
+        vx = 0;
+        vy = 1 * dificuldade;
+        px = centroX(x);
+      } else {
+        vx = 0;
+        vy = 0;
+      }
+      break;
+    case 3: // left  
+      if ((x > 1) && (get((int)centroX(x-1), (int)centroY(y)) != corObstaculos)) {
+        vy = 0;
+        vx = -1 * dificuldade;
+        py = centroY(y); 
+      } else {
+        vx = 0;
+        vy = 0;
+      }
+      break;
+    case 4: // right    
+      if ((x < nCol) && (get((int)centroX(x+1), (int)centroY(y)) != corObstaculos)) { //
+        vy = 0;
+        vx = 1 * dificuldade;
+        py = centroY(y); 
+      } else {
+        vx = 0;
+        vy = 0;
+      }
+      break;
+  }
+
+  // colisao com margens
+  if((px > centroX(nCol)) || (px < centroX(1))) {
+    vx = 0; // -vx
+    px = centroX(x); 
+  } if((py > centroY(nLin)) || (py < centroY(1))) {
+    vy = 0; // -vy
+    py = centroY(y); 
   }
 }
 
