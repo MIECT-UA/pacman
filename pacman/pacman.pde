@@ -151,7 +151,10 @@ void startGame() {
   vx = 1 * dificuldade;
   gameStarted = true;
   
-  // set up foodMap
+  // run all the functions that make up the game one time before draw does,
+  // in order to set up the food
+  desenharLabirinto();
+    // set up foodMap
   for (int i = 0; i < nCol; i++) {
     for (int j = 0; j < nLin; j++) {
       color c = get((int)centroX(i+1), (int)centroY(j+1));
@@ -161,7 +164,16 @@ void startGame() {
           foodMap[i][j][0] = 0;
         }
       }
-  }      
+  } 
+  desenharPontos();
+  desenharPacman();
+  desenharFantasmas();
+  comerPontos();
+  orientarPacman(0);
+  moverPacman();
+  moverFantasmas();
+  
+       
 }
 
 void moverFantasmas() {
@@ -175,10 +187,9 @@ void moverPacman() {
 
 // diretion -> 0 for no change, 1 for change up (ip [if possible]), 2 for change down(ip),
 // 3 for change left (ip) and 4 for change right (ip)
-void orientarPacman(int direction) {
-  
-         int x = (int)Math.round((px + 0.5)/tamanho);
-         int y = (int)Math.round((py + 0.5)/tamanho);
+void orientarPacman(int direction) { 
+   int x = (int)Math.round((px + 0.5)/tamanho);
+   int y = (int)Math.round((py + 0.5)/tamanho);
          
   switch (direction) {
       
@@ -270,6 +281,9 @@ void desenharFantasmas() {
 }
 
 void comerPontos() {
+  
+  // prob with left and up
+  
   int x = (int)Math.round((px + 0.5)/tamanho);
   int y = (int)Math.round((py + 0.5)/tamanho);
  
@@ -279,10 +293,11 @@ void comerPontos() {
   if (c == white) {  
     if (foodMap[x-1][y-1][0] == 1) {
       foodMap[x-1][y-1][0] = 0;
+      
+        // subir pontuacao
     }
   }     
         
-        // subir pontuacao
 
 
 }
@@ -306,8 +321,6 @@ void desenharPacman() {
   } else { // vy < 0
     arc(px, py, pRaio, pRaio, -PI/4.0, PI*5/4.0, PIE);
   }
-  //fill(0);
-  //triangle(px, py, px+pRaio/1.828427125, py-pRaio/1.828427125, px+pRaio/1.828427125, py+pRaio/1.828427125);
 }
 
 void desenharLabirinto () {
