@@ -19,8 +19,7 @@ float vx, vy;
 int fantasmas = 4;
 float[][] pFantasmas = new float[fantasmas][2];
 
-int[][] map;
-List<float[]> pontos = new ArrayList<float[]>();
+int[][][] foodMap;
 
 boolean gameStarted = false;
 float dificuldade;
@@ -53,7 +52,7 @@ void setup() {
   py = centroY(1);
   pRaio = tamanho / 2;                                                            /// pacman size //(tamanho - espacamento) / 1.5
   
-  map = new int[nLin][nCol];
+  foodMap = new int[nCol][nLin][1];
   
   // Inicializar os fantasmas
   pFantasmas[0][0] = centroX(nLin/2);
@@ -71,24 +70,9 @@ void setup() {
   //~//specifies speeds in X and Y directions
   //~vx = 0;
   //~vy = 0;
-  
-  
+
+ 
   frameRate(60);
-  
-  // o codigo abaixo corre uma vez para definir o ArrayList de Pontos
-  desenharLabirinto();  
-  // Insere um ponto nas células vazias
-  for(int i=1; i<=nCol; i++) {
-    for(int j=1; j<=nLin; j++) {
-      float[] coords = new float[2];
-      coords[0] = centroX(i); // = x
-      coords[1] = centroY(j); // = y
-      color c = get((int)coords[0], (int)coords[1]);
-      if(c != corObstaculos) {
-        pontos.add(coords);
-        }       
-      }      
-    }
   
 }
 
@@ -162,10 +146,22 @@ void mouseClicked() {
   }
 }
 
-// sets up two small but essential variables in order to start the game
+// sets up three small but essential variables in order to start the game
 void startGame() {
   vx = 1 * dificuldade;
   gameStarted = true;
+  
+  // set up foodMap
+  for (int i = 0; i < nCol; i++) {
+    for (int j = 0; j < nLin; j++) {
+      color c = get((int)centroX(i+1), (int)centroY(j+1));
+      if(c != corObstaculos) {
+          foodMap[i][j][0] = 1;
+        } else {
+          foodMap[i][j][0] = 0;
+        }
+      }
+  }      
 }
 
 void moverFantasmas() {
@@ -274,27 +270,21 @@ void desenharFantasmas() {
 }
 
 void comerPontos() {
-  float[] extremesX = {px, px-pRaio/2, px+pRaio/2};
-  float[] extremesY = {py, py-pRaio/2, py+pRaio/2};
-  for(int i = 0; i < 3; i++) { // 3 = nr de elementos em cada array
-    for(int j = 0; j < 3; j++) {
-      color c = get((int)extremesX[i], (int)extremesY[j]);
-      color white = color(255, 255 , 255);
+  int x = (int)Math.round((px + 0.5)/tamanho);
+  int y = (int)Math.round((py + 0.5)/tamanho);
+ 
+  color c = get((int)centroX(x), (int)centroY(y));
+  color white = color(255, 255 , 255);
       
-      if (c == white) {  
-        
-        for (int k = 0; k < pontos.size(); k++) {
-          //float[] coords = pontos.get(k);
-          if(((pontos.get(k)[0] - extremesX[i]) <= pRaio/4) && ((pontos.get(k)[1] - extremesY[i]) <= pRaio/4)) {
-            pontos.remove(k);
-          }
-        }     
+  if (c == white) {  
+    if (foodMap[x-1][y-1][0] == 1) {
+      foodMap[x-1][y-1][0] = 0;
+    }
+  }     
         
         // subir pontuacao
-        
-      }
-    }
-  }
+
+
 }
 
 /* Desenha o pacman - recebe um boolean - verdadeiro 
@@ -363,10 +353,13 @@ void desenharPontos() {
   noStroke();
 
  
-  // if on arraylist, draw
-  for (float[] temp : pontos) {
-    fill(255);
-    ellipse(temp[0], temp[1], pRaio/2, pRaio/2);
+  // if on array, draw
+  for (int i = 0; i < nCol; i++) {
+    for (int j = 0; j < nLin; j++) {
+      if (foodMap[i][j][0] == 1) {
+        ellipse(centroX(i+1), centroY(j+1), pRaio/2, pRaio/2);
+      }
+    }
   }
 }
 
