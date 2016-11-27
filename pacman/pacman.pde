@@ -1,5 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 // Parâmetros do labirinto
@@ -17,7 +16,11 @@ float vx, vy;
  
 // TODO - splash screen + dificulty selector
 int fantasmas = 4;
-float[][] pFantasmas = new float[fantasmas][2];
+float[][] pFantasmas = new float[fantasmas][3];
+float[] vFantasmas = {0.9, 1, 1.05, 1.13};
+int[][][] ghostMap;
+boolean[] obstacle = {false, false, false, false};
+
 
 int[][][] foodMap;
 
@@ -28,7 +31,6 @@ int pontuacao;
 
 // alinhar pacman e fantasmas
 // calcular high score e guardar num ficheiro
-// impedir colisoes com obstaculos (rebounce)
 // desenhar campo
 
 void setup() {
@@ -50,22 +52,27 @@ void setup() {
   // Inicializar o Pacman
   px = centroX(1);
   py = centroY(1);
-  pRaio = tamanho / 2;                                                            /// pacman size //(tamanho - espacamento) / 1.5
+  pRaio = tamanho / 2;
   
   foodMap = new int[nCol][nLin][1];
+  ghostMap = new int[nCol+2][nLin+2][1];
   
   // Inicializar os fantasmas
-  pFantasmas[0][0] = centroX(nLin/2);
-  pFantasmas[0][1] = centroY(nCol/2);
+  pFantasmas[0][0] = centroX(1);
+  pFantasmas[0][1] = centroY(1);
+  pFantasmas[0][2] = 4;
   
   pFantasmas[1][0] = centroX(1);
-  pFantasmas[1][1] = centroY(1);
+  pFantasmas[1][1] = centroY(nLin);
+  pFantasmas[1][2] = 4;
   
-  pFantasmas[2][0] = centroX(nLin/2 + 2);
-  pFantasmas[2][1] = centroY(nCol/2);
+  pFantasmas[2][0] = centroX(nCol);
+  pFantasmas[2][1] = centroY(1);
+  pFantasmas[2][2] = 3;
   
-  pFantasmas[3][0] = centroX(nLin/2 + 1);
-  pFantasmas[3][1] = centroY(nCol/2 - 1);
+  pFantasmas[3][0] = centroX(nCol);
+  pFantasmas[3][1] = centroY(nLin);
+  pFantasmas[3][2] = 3;
   
   //~//specifies speeds in X and Y directions
   //~vx = 0;
@@ -91,8 +98,9 @@ void draw(){
     text("Difícil", 500, 300); 
 
     
-  } else {    
-    desenharLabirinto();
+  } else {  
+    desenharLabirinto();  
+    
     desenharPontos();
     desenharPacman();
     desenharFantasmas();
@@ -100,6 +108,13 @@ void draw(){
     orientarPacman(0);
     moverPacman();
     moverFantasmas();
+    
+    for (int i = 0; i < nCol; i++) {
+      for (int j = 0; j < nLin; j++) {
+        fill(255);
+        text(ghostMap[i][j][0], centroX(i+1), centroX(j+1));
+      }
+    }
   }
   
 }
@@ -154,17 +169,24 @@ void startGame() {
   // run all the functions that make up the game one time before draw does,
   // in order to set up the food
   desenharLabirinto();
-    // set up foodMap
+    // set up foodMap and ghostMap
   for (int i = 0; i < nCol; i++) {
-    for (int j = 0; j < nLin; j++) {
+    for (int j = 0; j < nLin; j++) {     
       color c = get((int)centroX(i+1), (int)centroY(j+1));
       if(c != corObstaculos) {
           foodMap[i][j][0] = 1;
+          ghostMap[i+1][j+1][0] = 1;
         } else {
           foodMap[i][j][0] = 0;
+          ghostMap[i+1][j+1][0] = 0;
         }
+        
+        
+      ghostMap[0][j+1][0] = 0;
+      ghostMap[nCol+1][j+1][0] = 1;
       }
   } 
+  
   desenharPontos();
   desenharPacman();
   desenharFantasmas();
@@ -176,8 +198,135 @@ void startGame() {
        
 }
 
-void moverFantasmas() {
+void moverFantasmas() { 
+  // find pacman position
+  int pacX = (int)(Math.round((px + 0.5 - margemH/2)/tamanho));
+  int pacY = (int)(Math.round((py + 0.5 - margemV/2)/tamanho));
+  if ((vx < 0) || (vy < 0)) { // adjust for paman going up or left
+      pacX = (int)(Math.round((px + 0.5 + margemH*3.3)/tamanho)); 
+      pacY = (int)(Math.round((py + 0.5 + margemV*3.3)/tamanho));
+  }
+  
+   for (int i = 0; i < fantasmas; i++) {
 
+     float pFx = pFantasmas[i][0];
+     float pFy = pFantasmas[i][1];
+     
+      int x = (int)Math.round((pFx + 0.5 - margemH/2)/tamanho);
+      int y = (int)Math.round((pFy + 0.5 - margemV/2)/tamanho);
+     
+     // 1 for up, 2 for down, 3 for left, 4 for right
+     if (pFantasmas[i][2] - 1 < 0.1) { // up
+       y = (int)Math.round((pFy + 0.5 - margemV*2.8)/tamanho) + 1;
+     } else if (pFantasmas[i][2] - 2 < 0.1) { // down
+       y = (int)Math.round((pFy + 0.5 - margemV/2.8)/tamanho);
+     } else if (pFantasmas[i][2] - 3 < 0.1) { // left
+       x = (int)Math.round((pFx + 0.5 - margemH*2.9)/tamanho) + 1;
+     } else if (pFantasmas[i][2] - 4 < 0.1) { // right
+       x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
+     } 
+     
+     if (!obstacle[i]) {
+       text("here", 400, 300);
+       // perseguir pacman
+       if ((pacX-1 - x < -1) && (ghostMap[x-1][y][0] == 1)) { // move left  
+         pFx -= vFantasmas[i];
+         pFy = centroY(y); 
+         pFantasmas[i][2] = 3;
+       } else if ((pacX+1 - x > 1) && (ghostMap[x+1][y][0] == 1)) { // move right
+         pFx += vFantasmas[i];
+         pFy = centroY(y); 
+         pFantasmas[i][2] = 4;
+       } else if ((pacY-1 < y) && (ghostMap[x][y-1][0] == 1)) { // move up
+         pFy -= vFantasmas[i];
+         pFx = centroX(x); 
+         pFantasmas[i][2] = 1;
+       } else if ((pacY+1 > y) && (ghostMap[x][y+1][0] == 1)) { // move down
+         pFy += vFantasmas[i];
+         pFx = centroX(x); 
+         pFantasmas[i][2] = 2;
+       } else {
+       text("here2", 250, 300);
+        /* obstacle[i] = true;
+         if (pFantasmas[i][2] - 1 < 0.1) {
+           pFy = centroY(y+1); 
+         } else if (pFantasmas[i][2] - 2 < 0.1) {
+           pFy = centroY(y-1); 
+         } else if (pFantasmas[i][2] - 3 < 0.1) {
+           pFx = centroX(x);  
+         } else if (pFantasmas[i][2] - 4 < 0.1) {
+           pFx = centroX(x); 
+         }*/
+       } 
+     } /*else {
+       text("here3", 100, 300);
+       
+       if (pFantasmas[i][2] - 1 < 0.1) {
+           boolean unableLeft = false;
+           while(ghostMap[x-1][y-2][0] != 1) {
+             if(ghostMap[x-1][y-1][0] == 1) {
+               
+             }
+           }
+         } else if (pFantasmas[i][2] - 2 < 0.1) {
+           pFy = centroY(y-1); 
+         } else if (pFantasmas[i][2] - 3 < 0.1) {
+           pFx = centroX(x);  
+         } else if (pFantasmas[i][2] - 4 < 0.1) {
+           pFx = centroX(x); 
+         }
+         
+       if (y < 1) pFy -= vFantasmas[i];
+     else pFx -= vFantasmas[i];} */
+       /*do {
+         if ((ghostMap[x-1][y-1][0] == 1)) { // move left  
+           pFx -= vFantasmas[i];
+           pFy = centroY(y); 
+           pFantasmas[i][2] = 3;
+         }
+       } while(ghostMap[x-1][y-1][0] == 0);
+       do {
+         pFy -= vFantasmas[i];
+         pFx = centroX(x); 
+         pFantasmas[i][2] = 1;
+       } while (pacX-1 - x > -1);
+     } *//*else {
+     // if pacman is abova and can go left, go left until you can go down
+       do {
+         if ((ghostMap[x-1][y-1][0] == 1)) { // move left  
+           pFx -= vFantasmas[i];
+           pFy = centroY(y); 
+         }
+       } while(ghostMap[x-1][y-1][0] == 0);
+       do {
+         pFy += vFantasmas[i];
+         pFx = centroX(x); 
+       } while ((pacX-1 - x > -1));
+     }
+     } */
+     
+     text(x, 100*(i+1), 200);
+     text(y, 100*(i+1), 300);
+     
+    // colisao com margens
+    if (pFx > centroX(nCol)) { 
+      pFx -= vFantasmas[i];
+      pFx = centroX(x); 
+    } else if (pFx < centroX(1)) {
+      pFx += vFantasmas[i];
+      pFx = centroX(x); 
+    } else if (pFy > centroY(nLin)) {
+      pFy -= vFantasmas[i];
+      pFy = centroY(y); 
+    } else if (pFy < centroY(1)) {
+      pFy += vFantasmas[i];
+      pFy = centroY(y); 
+    }
+     
+     pFantasmas[i][0] = pFx;
+     pFantasmas[i][1] = pFy;
+     
+  }
 }
 
 void moverPacman() { 
@@ -188,24 +337,28 @@ void moverPacman() {
 // diretion -> 0 for no change, 1 for change up (ip [if possible]), 2 for change down(ip),
 // 3 for change left (ip) and 4 for change right (ip)
 void orientarPacman(int direction) { 
-   int x = (int)Math.round((px + 0.5)/tamanho);
-   int y = (int)Math.round((py + 0.5)/tamanho);
+  int x = (int)(Math.round((px + 0.5 - margemH/2)/tamanho));
+  int y = (int)(Math.round((py + 0.5 - margemV/2)/tamanho));
          
   switch (direction) {
       
     case 1: // up 
+      // adjust position for pacman going up
+      x = (int)(Math.round((px + 0.5 + margemH*3.3)/tamanho)); 
+      y = (int)(Math.round((py + 0.5 + margemV*3.3)/tamanho));
+      
       // check for collisons
-      if ((y > 1) && (get((int)centroX(x), (int)centroY(y-1)) != corObstaculos)) { // 
+      if ((y > 1) && (get((int)centroX(x), (int)centroY(y-1)) != corObstaculos)) {
         vx = 0;
         vy = -1 * dificuldade;
         px = centroX(x);
-      } else { 
+      } else {
         vx = 0;
         vy = 0;
       }
       break;
     case 2: //down
-      if ((y < nLin) && (get((int)centroX(x), (int)centroY(y+1)) != corObstaculos)) { // 
+      if ((y < nLin) && (get((int)centroX(x), (int)centroY(y+1)) != corObstaculos)) {
         vx = 0;
         vy = 1 * dificuldade;
         px = centroX(x);
@@ -215,6 +368,10 @@ void orientarPacman(int direction) {
       }
       break;
     case 3: // left  
+      // adjust position for pacman going left
+      x = (int)(Math.round((px + 0.5 + margemH*3.3)/tamanho)); 
+      y = (int)(Math.round((py + 0.5 + margemV*3.3)/tamanho));
+      
       if ((x > 1) && (get((int)centroX(x-1), (int)centroY(y)) != corObstaculos)) {
         vy = 0;
         vx = -1 * dificuldade;
@@ -236,11 +393,28 @@ void orientarPacman(int direction) {
       break;
   }
 
+  // ajustar posicao se o pacman for para cima ou para a esquerda
+  if (vx < 0 || vy < 0) { 
+    x = (int)(Math.round((px + 0.5 + margemH*3.3)/tamanho)); 
+    y = (int)(Math.round((py + 0.5 + margemV*3.3)/tamanho));
+  }
+
+  // colisao com obstaculos sem haver mudanca de direcao
+  if ((vy < 0) && (get((int)centroX(x), (int)centroY(y-1)) == corObstaculos) || 
+      (vy > 0) && (get((int)centroX(x), (int)centroY(y+1)) == corObstaculos) ||
+      (vx < 0) && (get((int)centroX(x-1), (int)centroY(y)) == corObstaculos) ||
+      (vx > 0) && (get((int)centroX(x+1), (int)centroY(y)) == corObstaculos)) {
+        vx = 0;
+        vy = 0;
+        px = centroX(x); 
+        py = centroY(y); 
+  }
+
   // colisao com margens
   if((px > centroX(nCol)) || (px < centroX(1))) {
     vx = 0; // -vx
     px = centroX(x); 
-  } if((py > centroY(nLin)) || (py < centroY(1))) {
+  } else if((py > centroY(nLin)) || (py < centroY(1))) {
     vy = 0; // -vy
     py = centroY(y); 
   }
@@ -281,11 +455,14 @@ void desenharFantasmas() {
 }
 
 void comerPontos() {
-  
-  // prob with left and up
-  
-  int x = (int)Math.round((px + 0.5)/tamanho);
-  int y = (int)Math.round((py + 0.5)/tamanho);
+  int x = (int)(Math.round((px + 0.5 - margemH/2)/tamanho));
+  int y = (int)(Math.round((py + 0.5 - margemV/2)/tamanho));
+
+  // adjust position for pacman going left or up
+  if (vx < 0 || vy < 0) { 
+    x = (int)(Math.round((px + 0.5 + margemH*3.3)/tamanho)); 
+    y = (int)(Math.round((py + 0.5 + margemV*3.3)/tamanho));
+  }
  
   color c = get((int)centroX(x), (int)centroY(y));
   color white = color(255, 255 , 255);
@@ -295,6 +472,7 @@ void comerPontos() {
       foodMap[x-1][y-1][0] = 0;
       
         // subir pontuacao
+        pontuacao += 100;
     }
   }     
         
@@ -332,8 +510,26 @@ void desenharLabirinto () {
   rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
 
   // Desenha obstáculos
-  desenharObstaculo(2,2, nCol-2, 1);
-  desenharObstaculo(2,4, nCol-2, nLin-4);
+  desenharObstaculo(2,2, 3, 1);
+  desenharObstaculo(6,2, 3, 1);
+  desenharObstaculo(10,2, 3, 1);
+  desenharObstaculo(2,4, nCol-2, 1);
+  desenharObstaculo(10,6, 4, 3);
+  desenharObstaculo(7,6, 1, 1);
+  desenharObstaculo(2,6, 3, 2); 
+  /*
+  desenharObstaculo(2,2, nCol-9, 1);
+  desenharObstaculo(8,2, nCol-8, 1); 
+  desenharObstaculo(3,3, nCol-13, nLin-6);
+  desenharObstaculo(5,4, nCol-13, nLin-6);
+  desenharObstaculo(2,8, nCol-4, nLin-9);
+  desenharObstaculo(1,4, nCol-13, nLin-7);
+  desenharObstaculo(8,5, nCol-12, nLin-8);
+  desenharObstaculo(1,10, nCol-1, nLin-9);
+  desenharObstaculo(13,6, nCol-13, nLin-6);
+  desenharObstaculo(11,6, nCol-11, nLin-9);
+  desenharObstaculo(12,4, nCol-13, nLin-9);
+  */
 }
 
 /* Desenha um obstáculo interno de um labirinto:
@@ -351,7 +547,8 @@ void desenharObstaculo(int x, int y, int numC, int numL) {
   comp = numL * tamanho;
 
   fill(corObstaculos);
-  stroke(0);
+  //stroke(0);
+  noStroke();
   strokeWeight(espacamento/2);
   rect(x0, y0, larg, comp);
 }
@@ -385,3 +582,20 @@ float centroX(int col) {
 float centroY(int lin) {
   return margemV + (lin - 0.5) * tamanho;
 }
+
+
+
+/*
+
+else if ((y > 1) && (get((int)centroX(x), (int)centroY(y-1)) != corObstaculos)) { 
+         // move up is possible - this else if is only reached if pacman is directly above ghost
+         pFx = centroX(x); 
+         pFy -= vFantasmas[i];
+       } 
+
+*/
+
+// win game
+// lose game
+// save score
+// menu (also displays scores)
