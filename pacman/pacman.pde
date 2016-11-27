@@ -15,7 +15,7 @@ float px, py, pRaio;
 //velocidade na horizontal e vertical do Pacman
 float vx, vy; 
  
-// TODO - splash screen + dificulty selector
+// variaveis relacionadas com os fantasmas
 int fantasmas = 4;
 float[][] pFantasmas = new float[fantasmas][3];
 float[] vFantasmas = {0.9, 1, 1.05, 1.13};
@@ -24,17 +24,14 @@ boolean[] obstacle = {false, false, false, false};
 boolean[] ableUp = {true, true, true, true}, ableDown = {true, true, true, true}, 
           ableLeft = {true, true, true, true}, ableRight = {true, true, true, true};
 
-
+// matriz da comida
 int[][][] foodMap;
 
+// outras variaveis
 boolean gameStarted = false;
 float dificuldade;
 int pontuacao = 0;
 
-
-// alinhar pacman e fantasmas
-// calcular high score e guardar num ficheiro
-// desenhar campo
 
 void setup() {
 
@@ -65,7 +62,7 @@ void setup() {
 void draw(){
   background(0);
   
-  // SPLASH SCREEN + SELECIONAR DIFICULDADE
+  // Menu + pontuacoes
   if (!gameStarted) {
     String start = "Escolhe um nível de dificuldade:";
     fill(178);
@@ -160,7 +157,7 @@ void startGame() {
   vx = 1 * dificuldade;
   
   // run all the functions that make up the game one time before draw does,
-  // in order to set up the food
+  // in order to set up food and ghost maps
   desenharLabirinto();
   
   // set up foodMap and ghostMap
@@ -194,10 +191,16 @@ void startGame() {
 }
 
 void gameOver() throws IOException {
-  File highscores = new File("highscores.txt");
-  PrintWriter pw = new PrintWriter(new FileOutputStream(highscores), true);
-  pw.append(String.valueOf(pontuacao));
-  pw.close();
+  
+  File fout = new File("highscores.txt");
+  if(!fout.exists()){
+     fout.createNewFile();
+   }
+   
+  PrintWriter pw = new PrintWriter(new FileOutputStream(fout), true);
+  //apw.append(String.valueOf(pontuacao));
+  pw.append("bananya");
+  pw.close(); 
   
   gameStarted = false;
 }
@@ -229,10 +232,9 @@ void moverFantasmas() {
      } else if (pFantasmas[i][2] - 4 < 0.1) { // right
        x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
      } 
-     
-     
-     text(x, 100*(i+1), 200);
-     text(y, 100*(i+1), 300);
+                                                                                                                  
+                                                                                                                   text(x, 100*(i+1), 200);
+                                                                                                                   text(y, 100*(i+1), 300);
      
      if (!obstacle[i]) {
        // perseguir pacman
@@ -493,10 +495,10 @@ void orientarPacman(int direction) {
 
   // colisao com margens
   if((px > centroX(nCol)) || (px < centroX(1))) {
-    vx = 0; // -vx
+    vx = 0;
     px = centroX(x); 
   } else if((py > centroY(nLin)) || (py < centroY(1))) {
-    vy = 0; // -vy
+    vy = 0;
     py = centroY(y); 
   }
 }
@@ -547,7 +549,8 @@ void comerPontos() {
  
   color c = get((int)centroX(x), (int)centroY(y));
   color white = color(255, 255 , 255);
-      
+  
+  // se for comida (ponto branco), comer
   if (c == white) {  
     if (foodMap[x-1][y-1][0] == 1) {
       foodMap[x-1][y-1][0] = 0;
@@ -567,8 +570,8 @@ void comerPontos() {
 */
 void desenharPacman() {
   fill(232, 239, 40);
-  //ellipseMode(CENTER);
-  //noStroke();
+  ellipseMode(CENTER);
+  noStroke();
   if (vy == 0) {
     if (vx > 0) {
       arc(px, py, pRaio, pRaio, PI/4.0, PI*7/4.0, PIE);
@@ -628,7 +631,6 @@ void desenharObstaculo(int x, int y, int numC, int numL) {
   comp = numL * tamanho;
 
   fill(corObstaculos);
-  //stroke(0);
   noStroke();
   strokeWeight(espacamento/2);
   rect(x0, y0, larg, comp);
@@ -663,18 +665,6 @@ float centroX(int col) {
 float centroY(int lin) {
   return margemV + (lin - 0.5) * tamanho;
 }
-
-
-
-/*
-
-else if ((y > 1) && (get((int)centroX(x), (int)centroY(y-1)) != corObstaculos)) { 
-         // move up is possible - this else if is only reached if pacman is directly above ghost
-         pFx = centroX(x); 
-         pFy -= vFantasmas[i];
-       } 
-
-*/
 
 // win game
 // lose game
