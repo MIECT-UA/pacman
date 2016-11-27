@@ -1,4 +1,5 @@
 import java.util.*;
+import java.io.*;
 
 
 // Parâmetros do labirinto
@@ -28,7 +29,7 @@ int[][][] foodMap;
 
 boolean gameStarted = false;
 float dificuldade;
-int pontuacao;
+int pontuacao = 0;
 
 
 // alinhar pacman e fantasmas
@@ -135,15 +136,34 @@ void mouseClicked() {
 // sets up several variables in order to start the game
 void startGame() {
   
+  // Inicializar o Pacman
   px = centroX(5);
   py = centroY(1);
+  
+  // Inicializar os fantasmas
+  pFantasmas[0][0] = centroX(1);
+  pFantasmas[0][1] = centroY(1);
+  pFantasmas[0][2] = 4;
+  
+  pFantasmas[1][0] = centroX(1);
+  pFantasmas[1][1] = centroY(nLin);
+  pFantasmas[1][2] = 4;
+  
+  pFantasmas[2][0] = centroX(nCol);
+  pFantasmas[2][1] = centroY(1);
+  pFantasmas[2][2] = 3;
+  
+  pFantasmas[3][0] = centroX(nCol);
+  pFantasmas[3][1] = centroY(nLin);
+  pFantasmas[3][2] = 3;
   
   vx = 1 * dificuldade;
   
   // run all the functions that make up the game one time before draw does,
   // in order to set up the food
   desenharLabirinto();
-    // set up foodMap and ghostMap
+  
+  // set up foodMap and ghostMap
   for (int i = 0; i < nCol; i++) {
     for (int j = 0; j < nLin; j++) {     
       color c = get((int)centroX(i+1), (int)centroY(j+1));
@@ -171,6 +191,15 @@ void startGame() {
   moverFantasmas();
   
        
+}
+
+void gameOver() throws IOException {
+  File highscores = new File("highscores.txt");
+  PrintWriter pw = new PrintWriter(new FileOutputStream(highscores), true);
+  pw.append(String.valueOf(pontuacao));
+  pw.close();
+  
+  gameStarted = false;
 }
 
 void moverFantasmas() { 
@@ -201,8 +230,11 @@ void moverFantasmas() {
        x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
      } 
      
+     
+     text(x, 100*(i+1), 200);
+     text(y, 100*(i+1), 300);
+     
      if (!obstacle[i]) {
-       text("here", 400, 300);
        // perseguir pacman
        if ((pacX - x < 0) && (ghostMap[x-1][y][0] == 1)) { // move left  
          pFx -= vFantasmas[i];
@@ -221,19 +253,19 @@ void moverFantasmas() {
          pFx = centroX(x); 
          pFantasmas[i][2] = 2;
        } else {
-       text("here2", 250, 300);
-       // if not "on" pacman,
-       // obstacle
-       if ((pacX == x) && (pacY == y)) {
-         gameStarted = false;
-       } else {
-         obstacle[i] = true;
+         if ((pacX == x) && (pacY == y)) {
+           try {
+            gameOver();
+          } catch (IOException e) {
+            System.err.println("Caught IOException: " + e.getMessage());
+          }
+         } else {
+           obstacle[i] = true;
          } 
        }
-     } else {
-       text("here3", 100, 300);
+     } else { // there is an obstacle between pacman and ghost
        
-        // obstacle above
+       // obstacle above
        if ((pFantasmas[i][2] - 1 < 0.1) || (pacY - y <= 0)) {
            // while obstacle above
            if(ghostMap[x][y-1][0] != 1) {
@@ -371,24 +403,6 @@ void moverFantasmas() {
            } 
          } 
      }
-     
-     text(x, 100*(i+1), 200);
-     text(y, 100*(i+1), 300);
-     
-    // colisao com margens
-    if (pFx > centroX(nCol)) { 
-      pFx -= vFantasmas[i];
-      pFx = centroX(x); 
-    } else if (pFx < centroX(1)) {
-      pFx += vFantasmas[i];
-      pFx = centroX(x); 
-    } else if (pFy > centroY(nLin)) {
-      pFy -= vFantasmas[i];
-      pFy = centroY(y); 
-    } else if (pFy < centroY(1)) {
-      pFy += vFantasmas[i];
-      pFy = centroY(y); 
-    }
      
      pFantasmas[i][0] = pFx;
      pFantasmas[i][1] = pFy;
