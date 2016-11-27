@@ -20,6 +20,8 @@ float[][] pFantasmas = new float[fantasmas][3];
 float[] vFantasmas = {0.9, 1, 1.05, 1.13};
 int[][][] ghostMap;
 boolean[] obstacle = {false, false, false, false};
+boolean[] ableUp = {true, true, true, true}, ableDown = {true, true, true, true}, 
+          ableLeft = {true, true, true, true}, ableRight = {true, true, true, true};
 
 
 int[][][] foodMap;
@@ -49,35 +51,11 @@ void setup() {
   margemV = (width - nCol * tamanho) / 2.0;
   margemH = (height - nLin * tamanho) / 2.0;
   
-  // Inicializar o Pacman
-  px = centroX(1);
-  py = centroY(1);
+  // Inicializar o Pacman e as estruturas internas de comida e fantasmas
   pRaio = tamanho / 2;
   
   foodMap = new int[nCol][nLin][1];
   ghostMap = new int[nCol+2][nLin+2][1];
-  
-  // Inicializar os fantasmas
-  pFantasmas[0][0] = centroX(1);
-  pFantasmas[0][1] = centroY(1);
-  pFantasmas[0][2] = 4;
-  
-  pFantasmas[1][0] = centroX(1);
-  pFantasmas[1][1] = centroY(nLin);
-  pFantasmas[1][2] = 4;
-  
-  pFantasmas[2][0] = centroX(nCol);
-  pFantasmas[2][1] = centroY(1);
-  pFantasmas[2][2] = 3;
-  
-  pFantasmas[3][0] = centroX(nCol);
-  pFantasmas[3][1] = centroY(nLin);
-  pFantasmas[3][2] = 3;
-  
-  //~//specifies speeds in X and Y directions
-  //~vx = 0;
-  //~vy = 0;
-
  
   frameRate(60);
   
@@ -99,8 +77,8 @@ void draw(){
 
     
   } else {  
-    desenharLabirinto();  
     
+    desenharLabirinto();
     desenharPontos();
     desenharPacman();
     desenharFantasmas();
@@ -109,14 +87,7 @@ void draw(){
     moverPacman();
     moverFantasmas();
     
-    for (int i = 0; i < nCol; i++) {
-      for (int j = 0; j < nLin; j++) {
-        fill(255);
-        text(ghostMap[i][j][0], centroX(i+1), centroX(j+1));
-      }
-    }
-  }
-  
+  }  
 }
 
 void keyPressed() {
@@ -161,10 +132,13 @@ void mouseClicked() {
   }
 }
 
-// sets up three small but essential variables in order to start the game
+// sets up several variables in order to start the game
 void startGame() {
+  
+  px = centroX(5);
+  py = centroY(1);
+  
   vx = 1 * dificuldade;
-  gameStarted = true;
   
   // run all the functions that make up the game one time before draw does,
   // in order to set up the food
@@ -180,12 +154,13 @@ void startGame() {
           foodMap[i][j][0] = 0;
           ghostMap[i+1][j+1][0] = 0;
         }
-        
-        
+     
       ghostMap[0][j+1][0] = 0;
       ghostMap[nCol+1][j+1][0] = 1;
-      }
-  } 
+    }
+  }
+  
+  gameStarted = true; 
   
   desenharPontos();
   desenharPacman();
@@ -217,7 +192,7 @@ void moverFantasmas() {
      
      // 1 for up, 2 for down, 3 for left, 4 for right
      if (pFantasmas[i][2] - 1 < 0.1) { // up
-       y = (int)Math.round((pFy + 0.5 - margemV*2.8)/tamanho) + 1;
+       y = (int)Math.round((pFy + 0.5 - margemV*5)/tamanho) + 1;
      } else if (pFantasmas[i][2] - 2 < 0.1) { // down
        y = (int)Math.round((pFy + 0.5 - margemV/2.8)/tamanho);
      } else if (pFantasmas[i][2] - 3 < 0.1) { // left
@@ -229,81 +204,173 @@ void moverFantasmas() {
      if (!obstacle[i]) {
        text("here", 400, 300);
        // perseguir pacman
-       if ((pacX-1 - x < -1) && (ghostMap[x-1][y][0] == 1)) { // move left  
+       if ((pacX - x < 0) && (ghostMap[x-1][y][0] == 1)) { // move left  
          pFx -= vFantasmas[i];
          pFy = centroY(y); 
          pFantasmas[i][2] = 3;
-       } else if ((pacX+1 - x > 1) && (ghostMap[x+1][y][0] == 1)) { // move right
+       } else if ((pacX - x > 0) && (ghostMap[x+1][y][0] == 1)) { // move right
          pFx += vFantasmas[i];
          pFy = centroY(y); 
          pFantasmas[i][2] = 4;
-       } else if ((pacY-1 < y) && (ghostMap[x][y-1][0] == 1)) { // move up
+       } else if ((pacY - y < 0) && (ghostMap[x][y-1][0] == 1)) { // move up
          pFy -= vFantasmas[i];
          pFx = centroX(x); 
          pFantasmas[i][2] = 1;
-       } else if ((pacY+1 > y) && (ghostMap[x][y+1][0] == 1)) { // move down
+       } else if ((pacY - y > 0) && (ghostMap[x][y+1][0] == 1)) { // move down
          pFy += vFantasmas[i];
          pFx = centroX(x); 
          pFantasmas[i][2] = 2;
        } else {
        text("here2", 250, 300);
-        /* obstacle[i] = true;
-         if (pFantasmas[i][2] - 1 < 0.1) {
-           pFy = centroY(y+1); 
-         } else if (pFantasmas[i][2] - 2 < 0.1) {
-           pFy = centroY(y-1); 
-         } else if (pFantasmas[i][2] - 3 < 0.1) {
-           pFx = centroX(x);  
-         } else if (pFantasmas[i][2] - 4 < 0.1) {
-           pFx = centroX(x); 
-         }*/
-       } 
-     } /*else {
+       // if not "on" pacman,
+       // obstacle
+       if ((pacX == x) && (pacY == y)) {
+         gameStarted = false;
+       } else {
+         obstacle[i] = true;
+         } 
+       }
+     } else {
        text("here3", 100, 300);
        
-       if (pFantasmas[i][2] - 1 < 0.1) {
-           boolean unableLeft = false;
-           while(ghostMap[x-1][y-2][0] != 1) {
-             if(ghostMap[x-1][y-1][0] == 1) {
-               
+        // obstacle above
+       if ((pFantasmas[i][2] - 1 < 0.1) || (pacY - y <= 0)) {
+           // while obstacle above
+           if(ghostMap[x][y-1][0] != 1) {
+           // move either left or right until obstacle is no longer above
+             if((ghostMap[x-1][y][0] == 1) && (ableLeft[i])) {  // if pac is on the left
+               pFx -= vFantasmas[i];
+               pFy = centroY(y); 
+             } else if ((ghostMap[x+1][y][0] == 1) && (ableRight[i])) { // go right
+               ableLeft[i] = false;
+               pFx += vFantasmas[i];
+               pFy = centroY(y); 
+             } else {
+             // go down until able to go either left or rigt 
+               if (ghostMap[x][y+1][0] == 1) {
+                 pFy += vFantasmas[i];
+                 pFx = centroX(x); 
+                 
+                 ableLeft[i] = ghostMap[x-1][y][0] == 1;
+                 ableRight[i] = ghostMap[x+1][y][0] == 1;
+               }
              }
            }
-         } else if (pFantasmas[i][2] - 2 < 0.1) {
-           pFy = centroY(y-1); 
-         } else if (pFantasmas[i][2] - 3 < 0.1) {
-           pFx = centroX(x);  
-         } else if (pFantasmas[i][2] - 4 < 0.1) {
-           pFx = centroX(x); 
-         }
+           if (pacY - y <= 0){ // go up
+             if (ghostMap[x][y-1][0] == 1) {
+               pFy -= vFantasmas[i];
+               pFx = centroX(x); 
+               pFantasmas[i][2] = 1;
+             }
+           } else {
+             obstacle[i] = false;
+           }
+         } 
          
-       if (y < 1) pFy -= vFantasmas[i];
-     else pFx -= vFantasmas[i];} */
-       /*do {
-         if ((ghostMap[x-1][y-1][0] == 1)) { // move left  
-           pFx -= vFantasmas[i];
-           pFy = centroY(y); 
-           pFantasmas[i][2] = 3;
-         }
-       } while(ghostMap[x-1][y-1][0] == 0);
-       do {
-         pFy -= vFantasmas[i];
-         pFx = centroX(x); 
-         pFantasmas[i][2] = 1;
-       } while (pacX-1 - x > -1);
-     } *//*else {
-     // if pacman is abova and can go left, go left until you can go down
-       do {
-         if ((ghostMap[x-1][y-1][0] == 1)) { // move left  
-           pFx -= vFantasmas[i];
-           pFy = centroY(y); 
-         }
-       } while(ghostMap[x-1][y-1][0] == 0);
-       do {
-         pFy += vFantasmas[i];
-         pFx = centroX(x); 
-       } while ((pacX-1 - x > -1));
+         
+        // obstacle below
+         else if ((pFantasmas[i][2] - 2 < 0.1) || (pacY - y > 0)) {
+           // while obstacle below
+           if(ghostMap[x][y+1][0] != 1) { 
+           // move either left or right until obstacle is no longer below
+             if((ghostMap[x-1][y][0] == 1) && (ableLeft[i])) {  // if pac is on the left
+               pFx -= vFantasmas[i];
+               pFy = centroY(y); 
+             } else if ((ghostMap[x+1][y][0] == 1) && (ableRight[i])) { // go right
+               ableLeft[i] = false;
+               pFx += vFantasmas[i];
+               pFy = centroY(y); 
+             } else {
+             // go up until able to go either left or rigt
+               if (ghostMap[x][y-1][0] == 1) {
+                 pFy -= vFantasmas[i];
+                 pFx = centroX(x); 
+                 
+                 ableLeft[i] = ghostMap[x-1][y][0] == 1;
+                 ableRight[i] = ghostMap[x+1][y][0] == 1;
+               }
+             }
+           }
+           if (pacY - y > 0) { // go up
+             if (ghostMap[x][y+1][0] == 1) {
+               pFy += vFantasmas[i];
+               pFx = centroX(x); 
+               pFantasmas[i][2] = 2;
+             }
+           } else {
+             obstacle[i] = false;
+           }
+         } 
+         
+         
+         // obstacle on the left
+         else if ((pFantasmas[i][2] - 3 < 0.1) || (pacX - x <= 0)) {
+           // while obstacle on the left
+           if(ghostMap[x-1][y][0] != 1) {
+           // move either up or down until obstacle is no longer on the left
+             if((ghostMap[x][y-1][0] == 1) && (ableUp[i])) {  // go up
+               pFx = centroX(x); 
+               pFy -= vFantasmas[i];
+             } else if ((ghostMap[x][y+1][0] == 1) && (ableDown[i])) { // go down
+               ableUp[i] = false;
+               pFx = centroX(x); 
+               pFy += vFantasmas[i];
+             } else {
+             // go right until able to go either up or down
+               if (ghostMap[x][y+1][0] == 1) {
+                 pFx += vFantasmas[i];
+                 pFy = centroY(y);
+                 
+                 ableUp[i] = ghostMap[x][y-1][0] == 1;
+                 ableDown[i] = ghostMap[x][y+1][0] == 1;
+               }
+             }
+           }
+           if (pacX - x <= 0){ // go left
+             if (ghostMap[x-1][y][0] == 1) {
+               pFx -= vFantasmas[i];
+               pFy = centroY(y); 
+               pFantasmas[i][2] = 3;
+             }
+           } else {
+             obstacle[i] = false;
+           }  
+         } 
+         
+         // obstacle is on the right
+         else if ((pFantasmas[i][2] - 4 < 0.1) || (pacX - x > 0)) {
+           // while obstacle on the right
+           if(ghostMap[x+1][y][0] != 1) {
+           // move either up or down until obstacle is no longer on the right
+             if((ghostMap[x][y-1][0] == 1) && (ableUp[i])) {  // go up
+               pFx = centroX(x); 
+               pFy -= vFantasmas[i];
+             } else if ((ghostMap[x][y+1][0] == 1) && (ableDown[i])) { // go down
+               ableUp[i] = false;
+               pFx = centroX(x); 
+               pFy += vFantasmas[i];
+             } else {
+             // go left until able to go either up or down
+               if (ghostMap[x][y-1][0] == 1) {
+                 pFx -= vFantasmas[i];
+                 pFy = centroY(y);
+                 
+                 ableUp[i] = ghostMap[x][y-1][0] == 1;
+                 ableDown[i] = ghostMap[x][y+1][0] == 1;
+               }
+             }
+           }
+           if (pacX - x > 0){ // go right
+             if (ghostMap[x+1][y][0] == 1) {
+               pFx += vFantasmas[i];
+               pFy = centroY(y); 
+               pFantasmas[i][2] = 4;
+             }
+           } else {
+             obstacle[i] = false;
+           } 
+         } 
      }
-     } */
      
      text(x, 100*(i+1), 200);
      text(y, 100*(i+1), 300);
@@ -510,14 +577,14 @@ void desenharLabirinto () {
   rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
 
   // Desenha obstáculos
-  desenharObstaculo(2,2, 3, 1);
+  /*desenharObstaculo(2,2, 3, 1);
   desenharObstaculo(6,2, 3, 1);
   desenharObstaculo(10,2, 3, 1);
   desenharObstaculo(2,4, nCol-2, 1);
   desenharObstaculo(10,6, 4, 3);
   desenharObstaculo(7,6, 1, 1);
-  desenharObstaculo(2,6, 3, 2); 
-  /*
+  desenharObstaculo(2,6, 3, 2); */
+  
   desenharObstaculo(2,2, nCol-9, 1);
   desenharObstaculo(8,2, nCol-8, 1); 
   desenharObstaculo(3,3, nCol-13, nLin-6);
@@ -529,7 +596,7 @@ void desenharLabirinto () {
   desenharObstaculo(13,6, nCol-13, nLin-6);
   desenharObstaculo(11,6, nCol-11, nLin-9);
   desenharObstaculo(12,4, nCol-13, nLin-9);
-  */
+  
 }
 
 /* Desenha um obstáculo interno de um labirinto:
