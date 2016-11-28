@@ -276,8 +276,8 @@ void moverFantasmas() {
        x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
      } 
                                                                                                                   
-                                                                                                                   text(x, 100*(i+1), 200);
-                                                                                                                   text(y, 100*(i+1), 300);
+                                                                                                                  // text(x, 100*(i+1), 200);
+                                                                                                                  // text(y, 100*(i+1), 300);
      
      if (!obstacle[i]) {
        // perseguir pacman
@@ -632,16 +632,21 @@ void desenharPacman() {
   noStroke();
   if (vy == 0) {
     if (vx > 0) {
-      arc(px, py, pRaio, pRaio, PI/4.0, PI*7/4.0, PIE);
+      //arc(px, py, pRaio, pRaio, PI/4.0, PI*7/4.0, PIE);
+      arc(px, py, pRaio, pRaio, map(abs(sin(px * PI/50)), 0, 1, PI/4.0, 0), map(abs(sin(px * PI/50)), 0, 1, PI*7/4.0, PI*2), PIE);
     } else {
-      arc(px, py, pRaio, pRaio, -PI*3/4.0, PI*3/4.0, PIE);
+      //arc(px, py, pRaio, pRaio, -PI*3/4.0, PI*3/4.0, PIE);
+      arc(px, py, pRaio, pRaio, map(abs(sin(px * PI/50)), 0, 1, -PI, -PI*3/4.0), map(abs(sin(px * PI/50)), 0, 1, PI, PI*3/4.0), PIE);
     }
   } else if (vy > 0) {
-    arc(px, py, pRaio, pRaio, -PI*5/4.0, PI/4.0, PIE);
+    //arc(px, py, pRaio, pRaio, -PI*5/4.0, PI/4.0, PIE);
+    arc(px, py, pRaio, pRaio, map(abs(sin(py * PI/50)), 0, 1, -PI*3/2.0, -PI*5/4.0), map(abs(sin(py * PI/50)), 0, 1, PI/2.0, PI/4.0), PIE);
   } else { // vy < 0
-    arc(px, py, pRaio, pRaio, -PI/4.0, PI*5/4.0, PIE);
+    //arc(px, py, pRaio, pRaio, -PI/4.0, PI*5/4.0, PIE);
+    arc(px, py, pRaio, pRaio, map(abs(sin(py * PI/50)), 0, 1, -PI/2.0, -PI/4.0), map(abs(sin(py * PI/50)), 0, 1, PI*3/2.0, PI*5/4.0), PIE);
   }
 }
+
 
 void desenharLabirinto () {
 
