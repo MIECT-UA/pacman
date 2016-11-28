@@ -36,6 +36,9 @@ int pontuacao = 0;
 // variable that stores velocities, used in stop/restart cheat codes
 float[] stopVel = new float[2];
 
+// flag for cheat codes used
+boolean cheatsUsed= false;
+
 void setup() {
 
   // Definir o tamanho da janela; notar que size() não aceita variáveis.
@@ -143,6 +146,7 @@ void keyPressed() {
       vFantasmas[3] = 2.14;
     }
     else if (key == 'F' || key == 'f') { // "F"reeze ghosts
+      cheatsUsed = true;
       for (int i = 0; i < fantasmas; i++) {
         vFantasmas[i] = 0;
       }
@@ -233,20 +237,120 @@ void startGame() {
        
 }
 
-void gameOver() throws IOException {
-  
-  File fout = new File("highscores.txt");
-  if(!fout.exists()){
-     fout.createNewFile();
-   }
-   
-  PrintWriter pw = new PrintWriter(new FileOutputStream(fout), true);
-  //apw.append(String.valueOf(pontuacao));
-  pw.append("bananya");
-  pw.close(); 
-  
+/* Guarda a pontuacao e reinicia o jogo */
+void gameOver() {
+  // save score
+  try {
+        // open file
+        File fout = new File("highscores.txt");
+        if(!fout.exists()){
+          fout.createNewFile();
+        }
+
+        // write score, making sure there are only 3 highscores for every category
+        String highscores = "";
+        
+        // read top 3 scores from each category
+        Scanner input = new Scanner(fout);
+        int[][] scoresArray = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
+        while(input.hasNextLine()) {
+          String line = input.nextLine();
+          String[] parts = line.split(":");
+          
+          int index = 3;
+          switch (parts[0]) {
+            case "Easy":
+              index = 0;
+              break;
+            case "Medium":
+              index = 1;
+              break;
+            case "Hard":
+              index = 2;
+              break;
+            // by default = cheat codes used
+          }
+          for(int i = 0; i < 3; i++) {
+            int temp = Integer.parseInt(parts[1]);
+            if (temp > scoresArray[index][i]) {
+              if (i != 2) {
+                if (i == 0) {
+                  scoresArray[index][i+2] = scoresArray[index][i+1];
+                }
+                scoresArray[index][i+1] = scoresArray[index][i];
+              }
+              scoresArray[index][i] = temp;
+              break;
+            }
+          }
+        }
+        input.close();
+        
+        // check if current game's score belong in top three
+        int currentGameIndex = 3;
+        if (!cheatsUsed) {
+          switch ((int)(dificuldade * 100)) {
+            case 260:
+              currentGameIndex = 0;
+              break;
+            case 230:
+              currentGameIndex = 1;
+              break;
+            case 190:
+              currentGameIndex = 2;
+              break;
+          }
+        }
+        for(int i = 0; i < 3; i++) {
+            if (pontuacao > scoresArray[currentGameIndex][i]) {
+              if (i != 2) {
+                if (i == 0) {
+                  scoresArray[currentGameIndex][i+2] = scoresArray[currentGameIndex][i+1];
+                }
+                scoresArray[currentGameIndex][i+1] = scoresArray[currentGameIndex][i];
+              }
+              scoresArray[currentGameIndex][i] = pontuacao;
+              break;
+            }
+          }
+        
+        
+        // write top 3 scores from each category
+        for (int i = 0; i < 4; i++) {
+          String header = "With Cheat Codes:";
+          switch (i){
+            case 0:
+              header = "Easy:";
+              break;
+            case 1:
+              header = "Medium:";
+              break;
+            case 2:
+              header = "Hard:";
+              break;
+          }
+          for (int j = 0; j < 3; j++) {
+            highscores += header + String.valueOf(scoresArray[i][j]) + "\n";
+          }
+        }
+        
+        
+        PrintWriter fileOut = new PrintWriter(fout);
+        fileOut.write(highscores);
+        fileOut.close();
+        
+        
+                                                                                                                         // todo: save only the 3 highest scores 
+                                                                                                                         // for every category
+
+      } catch (IOException e){
+        e.printStackTrace();
+      }
+      
+  // restart game
   gameStarted = false;
 }
+
 
 void moverFantasmas() { 
   // find pacman position
@@ -263,8 +367,12 @@ void moverFantasmas() {
      float pFy = pFantasmas[i][1];
      
       int x = (int)Math.round((pFx + 0.5 - margemH/2)/tamanho);
-      int y = (int)Math.round((pFy + 0.5 - margemV/2)/tamanho);
-     
+      int y = (int)Math.round((pFy + 0.5 - margemV/1.5)/tamanho);
+      if ((pFantasmas[i][2] - 1 < 0.1) || (pFantasmas[i][2] - 3 < 0.1)) {
+        x = (int)(Math.round((pFx + 0.5 + margemH*3.3)/tamanho)); 
+        y = (int)(Math.round((pFy + 0.5 + margemV*3.6)/tamanho));
+      }
+     /*
      // 1 for up, 2 for down, 3 for left, 4 for right
      if (pFantasmas[i][2] - 1 < 0.1) { // up
        y = (int)Math.round((pFy + 0.5 - margemV*5)/tamanho) + 1;
@@ -274,7 +382,7 @@ void moverFantasmas() {
        x = (int)Math.round((pFx + 0.5 - margemH*2.9)/tamanho) + 1;
      } else if (pFantasmas[i][2] - 4 < 0.1) { // right
        x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
-     } 
+     } */
                                                                                                                   
                                                                                                                   // text(x, 100*(i+1), 200);
                                                                                                                   // text(y, 100*(i+1), 300);
@@ -299,11 +407,7 @@ void moverFantasmas() {
          pFantasmas[i][2] = 2;
        } else {
          if ((pacX == x) && (pacY == y)) {
-           try {
-            gameOver();
-          } catch (IOException e) {
-            System.err.println("Caught IOException: " + e.getMessage());
-          }
+           gameOver();
          } else {
            obstacle[i] = true;
          } 
@@ -614,7 +718,7 @@ void comerPontos() {
       foodMap[x-1][y-1][0] = 0;
       
         // subir pontuacao
-        pontuacao += 100;
+        pontuacao += 100 * (5/dificuldade);
     }
   }     
         
@@ -734,7 +838,7 @@ float centroY(int lin) {
   return margemV + (lin - 0.5) * tamanho;
 }
 
+
+
 // win game
-// lose game
-// save score
 // menu (also displays scores)
