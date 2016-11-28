@@ -33,6 +33,7 @@ boolean gameStarted = false;
 float dificuldade;
 int pontuacao = 0;
 PImage introPac;
+float facil = 2.60, medio = 2.30, dificil = 1.90;
 
 // variable that stores velocities, used in stop/restart cheat codes
 float[] stopVel = new float[2];
@@ -172,6 +173,7 @@ void draw(){
 }
 
 void keyPressed() {
+  // pacman direction
   if (key == CODED) {
     if (keyCode == UP) {
       orientarPacman(1);
@@ -190,9 +192,51 @@ void keyPressed() {
     } else if (key == 'A' || key == 'a') {
       orientarPacman(3);
     } else if (key == 'D' || key == 'd') {
-      orientarPacman(4);
+      if (gameStarted) {
+        orientarPacman(4);
+      } else { // dificulty seletor
+        startGame(dificil);
+      }
     }
-    // cheat codes
+    else if (key == 'M' || key == 'm'){ 
+      if (gameStarted) {                            // cheat codes
+        // restart movement ("M"ovement)
+        vx = stopVel[0];
+        vy = stopVel[1];
+        vFantasmas[0] = 1.7; 
+        vFantasmas[1] = 1.5; 
+        vFantasmas[2] = 1.95; 
+        vFantasmas[3] = 2.14;
+      } else { // dificulty selector
+        startGame(medio);
+      }
+    } else if (key == 'N' || key == 'n') { // stop movement ("N"o movement)
+      cheatsUsed = true;
+      stopVel[0] = vx;
+      stopVel[1] = vy;
+      vx = 0;
+      vy = 0;
+      for (int i = 0; i < fantasmas; i++) {
+        vFantasmas[i] = 0;
+      }
+    }
+    
+    else if (key == 'F' || key == 'f') { // "F"reeze ghosts
+      if (gameStarted) {
+        cheatsUsed = true;
+        for (int i = 0; i < fantasmas; i++) {
+          vFantasmas[i] = 0;
+        } 
+      } else { // dificulty seletor
+        startGame(facil);
+      }
+    } else if (key == 'U' || key == 'u') { // "U"nfreeze ghosts
+      vFantasmas[0] = 1.7; 
+      vFantasmas[1] = 1.5; 
+      vFantasmas[2] = 1.95; 
+      vFantasmas[3] = 2.14;
+    }
+    
     else if (key == 'Y' || key == 'y') { // "Y"ellow
       pacColor = color(232, 239, 40);
       corObstaculos = color(100, 0 , 128);
@@ -206,56 +250,24 @@ void keyPressed() {
       pacColor = color(140, 140, 140);
       corObstaculos = color(70, 70 , 70);
     }
-    else if (key == 'N' || key == 'n') { // stop movement ("N"o movement)
-      stopVel[0] = vx;
-      stopVel[1] = vy;
-      vx = 0;
-      vy = 0;
-      for (int i = 0; i < fantasmas; i++) {
-        vFantasmas[i] = 0;
-      }
-    } else if (key == 'M' || key == 'm'){ // restart movement ("M"ovement)
-      vx = stopVel[0];
-      vy = stopVel[1];
-      vFantasmas[0] = 1.7; 
-      vFantasmas[1] = 1.5; 
-      vFantasmas[2] = 1.95; 
-      vFantasmas[3] = 2.14;
-    }
-    else if (key == 'F' || key == 'f') { // "F"reeze ghosts
-      cheatsUsed = true;
-      for (int i = 0; i < fantasmas; i++) {
-        vFantasmas[i] = 0;
-      }
-    } else if (key == 'U' || key == 'u') { // "U"nfreeze ghosts
-      vFantasmas[0] = 1.7; 
-      vFantasmas[1] = 1.5; 
-      vFantasmas[2] = 1.95; 
-      vFantasmas[3] = 2.14;
-    }
   }
 }
 
 void mouseClicked() {
   if (!gameStarted && (mouseX >= 0) && (mouseX <= width*2/3)) {
-     if ((mouseY >= 150) && (mouseY < 300)) {
-      // facil
-      dificuldade = 2.60;
-      startGame();
-    } else if ((mouseY >= 300) && (mouseY < 420)) {
-      // medio
-      dificuldade = 2.30;
-      startGame();
-    } else if ((mouseY >= 420) /*&& (mouseY <= 350)*/) {
-      // dificil
-      dificuldade = 1.90;
-      startGame();
+     if ((mouseY >= 150) && (mouseY < 300)) { // facil
+      startGame(facil);
+    } else if ((mouseY >= 300) && (mouseY < 420)) { // medio
+      startGame(medio);
+    } else if ((mouseY >= 420)) { // dificil
+      startGame(dificil);
     }
   }
 }
 
 // sets up several variables in order to start the game
-void startGame() {
+void startGame(float dif) {
+  dificuldade = dif;
   
   // Inicializar o Pacman
   px = centroX(5);
@@ -451,17 +463,17 @@ void moverFantasmas() {
         x = (int)(Math.round((pFx + 0.5 + margemH*3.3)/tamanho)); 
         y = (int)(Math.round((pFy + 0.5 + margemV*3.6)/tamanho));
       }
-     /*
-     // 1 for up, 2 for down, 3 for left, 4 for right
-     if (pFantasmas[i][2] - 1 < 0.1) { // up
-       y = (int)Math.round((pFy + 0.5 - margemV*5)/tamanho) + 1;
-     } else if (pFantasmas[i][2] - 2 < 0.1) { // down
-       y = (int)Math.round((pFy + 0.5 - margemV/2.8)/tamanho);
-     } else if (pFantasmas[i][2] - 3 < 0.1) { // left
-       x = (int)Math.round((pFx + 0.5 - margemH*2.9)/tamanho) + 1;
-     } else if (pFantasmas[i][2] - 4 < 0.1) { // right
-       x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
-     } */
+                                                                                       
+                                                                                       // 1 for up, 2 for down, 3 for left, 4 for right
+                                                                                       if (pFantasmas[i][2] - 1 < 0.1) { // up
+                                                                                         y = (int)Math.round((pFy + 0.5 - margemV*5)/tamanho) + 1;
+                                                                                       } else if (pFantasmas[i][2] - 2 < 0.1) { // down
+                                                                                         y = (int)Math.round((pFy + 0.5 - margemV/2.8)/tamanho);
+                                                                                       } else if (pFantasmas[i][2] - 3 < 0.1) { // left
+                                                                                         x = (int)Math.round((pFx + 0.5 - margemH*2.9)/tamanho) + 1;
+                                                                                       } else if (pFantasmas[i][2] - 4 < 0.1) { // right
+                                                                                         x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
+                                                                                       } 
                                                                                                                   
                                                                                                                   // text(x, 100*(i+1), 200);
                                                                                                                   // text(y, 100*(i+1), 300);
@@ -485,7 +497,7 @@ void moverFantasmas() {
          pFx = centroX(x); 
          pFantasmas[i][2] = 2;
        } else {
-         if ((pacX == x) && (pacY == y)) {
+         if ((pacX - x < 0.2) && (pacX - x > -0.2) && (pacY - y < 0.2) && (pacY - y > -0.2)) {
            gameOver();
          } else {
            obstacle[i] = true;
@@ -786,8 +798,10 @@ void comerPontos() {
   if (vx < 0 || vy < 0) { 
     x = (int)(Math.round((px + 0.5 + margemH*3.3)/tamanho)); 
     y = (int)(Math.round((py + 0.5 + margemV*3.3)/tamanho));
+  } else if (vx > 0) {
+    x = (int)(Math.round((px + 0.5 - margemH/2)/tamanho + 0.23));
   }
- 
+
   color c = get((int)centroX(x), (int)centroY(y));
   color white = color(255, 255 , 255);
   
@@ -815,17 +829,17 @@ void desenharPacman() {
   noStroke();
   if (vy == 0) {
     if (vx > 0) {
-      //arc(px, py, pRaio, pRaio, PI/4.0, PI*7/4.0, PIE);
+      // arc between PI/4.0 and PI*7/4.0
       arc(px, py, pRaio, pRaio, map(abs(sin(px * PI/50)), 0, 1, PI/4.0, 0), map(abs(sin(px * PI/50)), 0, 1, PI*7/4.0, PI*2), PIE);
     } else {
-      //arc(px, py, pRaio, pRaio, -PI*3/4.0, PI*3/4.0, PIE);
+      // arc betwwen -PI*3/4.0 and PI*3/4.0
       arc(px, py, pRaio, pRaio, map(abs(sin(px * PI/50)), 0, 1, -PI, -PI*3/4.0), map(abs(sin(px * PI/50)), 0, 1, PI, PI*3/4.0), PIE);
     }
   } else if (vy > 0) {
-    //arc(px, py, pRaio, pRaio, -PI*5/4.0, PI/4.0, PIE);
+    // arc betwwen -PI*5/4.0 and PI/4.0
     arc(px, py, pRaio, pRaio, map(abs(sin(py * PI/50)), 0, 1, -PI*3/2.0, -PI*5/4.0), map(abs(sin(py * PI/50)), 0, 1, PI/2.0, PI/4.0), PIE);
   } else { // vy < 0
-    //arc(px, py, pRaio, pRaio, -PI/4.0, PI*5/4.0, PIE);
+    // arc betwwen -PI/4.0 and PI*5/4.0
     arc(px, py, pRaio, pRaio, map(abs(sin(py * PI/50)), 0, 1, -PI/2.0, -PI/4.0), map(abs(sin(py * PI/50)), 0, 1, PI*3/2.0, PI*5/4.0), PIE);
   }
 }
@@ -840,7 +854,7 @@ void desenharLabirinto () {
   rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
 
   // Desenha obstáculos
-  if (dificuldade == 2.60) { // easy map
+  if (dificuldade == facil) { // easy map
     desenharObstaculo(2,2, 3, 1);
     desenharObstaculo(6,2, 3, 1);
     desenharObstaculo(10,2, 3, 1);
@@ -850,7 +864,9 @@ void desenharLabirinto () {
     desenharObstaculo(2,6, 3, 2);
     desenharObstaculo(2,9, 6, 1);
     desenharObstaculo(9,6, 1, 4);
-  } /* else if (dificuldade == 2.30) {} */ else {
+  } /* else if (dificuldade == medio) {
+    desenharObstaculo();
+  } */ else {
     // hard map
     desenharObstaculo(2,2, nCol-9, 1);
     desenharObstaculo(8,2, nCol-8, 1); 
