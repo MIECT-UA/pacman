@@ -11,7 +11,7 @@ color corObstaculos =  color(100, 0 , 128);      // cor de fundo dos obstáculos
 
 // Posicao, tamanho e cor do Pacman
 float px, py, pRaio;
-color pacColor = color(232, 239, 40);
+color pacColor = color(255, 253, 56);
 
 //velocidade na horizontal e vertical do Pacman
 float vx, vy; 
@@ -32,12 +32,13 @@ int[][][] foodMap;
 boolean gameStarted = false;
 float dificuldade;
 int pontuacao = 0;
+PImage introPac;
 
 // variable that stores velocities, used in stop/restart cheat codes
 float[] stopVel = new float[2];
 
 // flag for cheat codes used
-boolean cheatsUsed= false;
+boolean cheatsUsed = false;
 
 void setup() {
 
@@ -60,6 +61,8 @@ void setup() {
   
   foodMap = new int[nCol][nLin][1];
   ghostMap = new int[nCol+2][nLin+2][1];
+  
+  introPac = loadImage("pacman.png");
  
   frameRate(60);
   
@@ -70,15 +73,89 @@ void draw(){
   
   // Menu + pontuacoes
   if (!gameStarted) {
-    String start = "Escolhe um nível de dificuldade:";
-    fill(178);
-    textSize(32);
-    text(start, 100, 100);
+    // intro screen
+    // menu
+    fill(0, 0);
+    stroke(pacColor);
+    strokeWeight(espacamento);
     
-    text("Fácil", 100, 300); 
-    text("Médio", 300, 300); 
-    text("Difícil", 500, 300); 
+    image(introPac, margemH*2, 0, 0.371875*(height - 2*margemV), height - 2*margemV);
+    
+    rect(margemH, margemV, width*2/3, height - 2*margemV);
+    for (int i = 0; i < 4; i++) {
+      rect(margemH*2 + width*2/3, margemV*(i+1) + (height - 5*margemV)*i/4, width*1/3 - 3*margemH,  (height - 5*margemV)/4);
+    }
+    
+    fill(pacColor);
+    textSize(120);
+    text("P", 200, 125);
+    textSize(60);
+    text("acman", 250, 125);
+    
+    fill(color(255, 255, 255));
+    text("Fácil", 200, 240); 
+    text("Médio", 200, 360); 
+    text("Difícil", 200, 480); 
 
+    // highscores
+    fill(pacColor);
+    textSize(25);
+    text("Fácil", margemH*3 + width*2/3, margemV*3.36); 
+    text("Médio", margemH*3 + width*2/3, margemV*4.39 + (height - 5*margemV)*1/4); 
+    text("Difícil", margemH*3 + width*2/3, margemV*5.43 + (height - 5*margemV)*2/4); 
+    text("Cheat Codes", margemH*3 + width*2/3, margemV*6.45 + (height - 5*margemV)*3/4); 
+    
+    try {
+      File fout = new File("highscores.txt");
+      if(fout.exists()){
+        Scanner input = new Scanner(fout);
+        int[][] scoresArray = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
+        while(input.hasNextLine()) {
+          String line = input.nextLine();
+          String[] parts = line.split(":");
+          
+          int index = 3;
+          switch (parts[0]) {
+            case "Easy":
+              index = 0;
+              break;
+            case "Medium":
+              index = 1;
+              break;
+            case "Hard":
+              index = 2;
+              break;
+            // by default = cheat codes used
+          }
+          for(int i = 0; i < 3; i++) {
+            int temp = Integer.parseInt(parts[1]);
+            if (temp > scoresArray[index][i]) {
+              if (i != 2) {
+                if (i == 0) {
+                  scoresArray[index][i+2] = scoresArray[index][i+1];
+                }
+                scoresArray[index][i+1] = scoresArray[index][i];
+              }
+              scoresArray[index][i] = temp;
+              break;
+            }
+          }
+        }
+        input.close();
+        
+        fill(color(255, 255, 255));
+        // print each highscore
+        for (int i = 0; i < 4; i++) {
+          //text("Médio", margemH*3 + width*2/3, margemV*4.35 + (height - 5*margemV)*1/4); 
+          for (int j = 0; j < 3; j++) {
+            // rect(x, margemV*(i+1) + (height - 5*margemV)*i/4, width*1/3 - 3*margemH,  (height - 5*margemV)/4);
+            text(scoresArray[i][j], margemH*13 + width*2/3, margemV*(i+6.25) + (height - 5*margemV)*(i)/4 + 27*j); 
+          }
+        }
+      }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
     
   } else {  
     
@@ -160,16 +237,16 @@ void keyPressed() {
 }
 
 void mouseClicked() {
-  if (!gameStarted) {
-    if((mouseX >= 50) && (mouseX <= 250) && (mouseY >= 250) && (mouseY <= 350)) {
+  if (!gameStarted && (mouseX >= 0) && (mouseX <= width*2/3)) {
+     if ((mouseY >= 150) && (mouseY < 300)) {
       // facil
       dificuldade = 2.60;
       startGame();
-    } else if ((mouseX >= 250) && (mouseX <= 450) && (mouseY >= 250) && (mouseY <= 350)) {
+    } else if ((mouseY >= 300) && (mouseY < 420)) {
       // medio
       dificuldade = 2.30;
       startGame();
-    } else if ((mouseX >= 450) && (mouseX <= 650) && (mouseY >= 250) && (mouseY <= 350)) {
+    } else if ((mouseY >= 420) /*&& (mouseY <= 350)*/) {
       // dificil
       dificuldade = 1.90;
       startGame();
@@ -201,7 +278,12 @@ void startGame() {
   pFantasmas[3][1] = centroY(nLin);
   pFantasmas[3][2] = 3;
   
+  // Inicializar velocidades
   vx = 1 * dificuldade;
+  vFantasmas[0] = 1.7; 
+  vFantasmas[1] = 1.5; 
+  vFantasmas[2] = 1.95; 
+  vFantasmas[3] = 2.14;
   
   // run all the functions that make up the game one time before draw does,
   // in order to set up food and ghost maps
@@ -224,6 +306,7 @@ void startGame() {
     }
   }
   
+  cheatsUsed = false;
   gameStarted = true; 
   
   desenharPontos();
@@ -338,10 +421,6 @@ void gameOver() {
         PrintWriter fileOut = new PrintWriter(fout);
         fileOut.write(highscores);
         fileOut.close();
-        
-        
-                                                                                                                         // todo: save only the 3 highest scores 
-                                                                                                                         // for every category
 
       } catch (IOException e){
         e.printStackTrace();
@@ -700,7 +779,7 @@ void desenharFantasmas() {
 }
 
 void comerPontos() {
-  int x = (int)(Math.round((px + 0.5 - margemH/2)/tamanho));
+  int x = (int)(Math.round((px + 0.5 - margemH)/tamanho));
   int y = (int)(Math.round((py + 0.5 - margemV/2)/tamanho));
 
   // adjust position for pacman going left or up
@@ -842,3 +921,5 @@ float centroY(int lin) {
 
 // win game
 // menu (also displays scores)
+// map for medium dificulty
+// eat ghosts cheat code
