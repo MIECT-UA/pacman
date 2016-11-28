@@ -25,15 +25,23 @@ boolean[] obstacle = {false, false, false, false};
 boolean[] ableUp = {true, true, true, true}, ableDown = {true, true, true, true}, 
           ableLeft = {true, true, true, true}, ableRight = {true, true, true, true};
 
-// matriz da comida
+// matriz e counter da comida
 int[][][] foodMap;
+int foodCounter = 0;
 
 // outras variaveis
 boolean gameStarted = false;
+boolean gameWon = false;
+boolean gameLost = false;
 float dificuldade;
+float facil = 2.60, medio = 2.30, dificil = 1.90;
+String nivel;
 int pontuacao = 0;
 PImage introPac;
-float facil = 2.60, medio = 2.30, dificil = 1.90;
+
+// variables for win screen
+int screenDuration;
+int messageScreenDuration = 3000;
 
 // variable that stores velocities, used in stop/restart cheat codes
 float[] stopVel = new float[2];
@@ -46,6 +54,8 @@ void setup() {
   // Definir o tamanho da janela; notar que size() não aceita variáveis.
   size(720, 520);
   background(0);
+  
+  smooth();
   
   nCol = (int)width/tamanho;
   nLin = (int)height/tamanho;
@@ -158,6 +168,48 @@ void draw(){
         e.printStackTrace();
     }
     
+  } else if (gameWon) {
+    fill(0);
+    stroke(pacColor);
+    strokeWeight(espacamento);
+    rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
+    
+    fill(pacColor);
+    textSize(100);
+    text("Parabéns!", 100, 200);
+    fill(255);
+    textSize(40);
+    text("Venceste o nível " + nivel + ", com ", 40, 300); 
+    text("uma pontuação de " + String.valueOf(pontuacao) + " pontos!", 40, 370);
+    
+    if (millis() - screenDuration > messageScreenDuration) {
+      // exit win screen
+      gameWon = false;
+      // end game
+      gameOver();
+    }
+    
+  } else if (gameLost) {
+    fill(0);
+    stroke(pacColor);
+    strokeWeight(espacamento);
+    rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
+    
+    fill(pacColor);
+    textSize(85);
+    //text("Oh não!", 65, 200);
+    text("Ghostbusted!", 65, 200);
+    fill(255);
+    textSize(40);
+    text("Perdeste no nível " + nivel + ", com ", 40, 300); 
+    text("uma pontuação de " + String.valueOf(pontuacao) + " pontos!", 40, 370);
+    
+    if (millis() - screenDuration > messageScreenDuration) {
+      // exit win screen
+      gameLost = false;
+      // end game
+      gameOver();
+    }
   } else {  
     
     desenharLabirinto();
@@ -250,16 +302,23 @@ void keyPressed() {
       pacColor = color(140, 140, 140);
       corObstaculos = color(70, 70 , 70);
     }
+
+    else if (key == 'Q' || key == 'q') { // "Q"uit the game
+      loseGame();
+    }
   }
 }
 
 void mouseClicked() {
   if (!gameStarted && (mouseX >= 0) && (mouseX <= width*2/3)) {
      if ((mouseY >= 150) && (mouseY < 300)) { // facil
+      nivel = "fácil";
       startGame(facil);
     } else if ((mouseY >= 300) && (mouseY < 420)) { // medio
+      nivel = "médio";
       startGame(medio);
     } else if ((mouseY >= 420)) { // dificil
+      nivel = "difícil";
       startGame(dificil);
     }
   }
@@ -308,6 +367,7 @@ void startGame(float dif) {
       if(c != corObstaculos) {
           foodMap[i][j][0] = 1;
           ghostMap[i+1][j+1][0] = 1;
+          foodCounter++;
         } else {
           foodMap[i][j][0] = 0;
           ghostMap[i+1][j+1][0] = 0;
@@ -442,6 +502,19 @@ void gameOver() {
   gameStarted = false;
 }
 
+/* Termina o jogo quando este foi ganho, mostrando uma mensagem de vitoria */
+void winGame() {
+  // display 'you won' screen
+  screenDuration = millis();
+  gameWon = true;
+}
+
+/* Termina o jogo quando este foi perdido, mostrando uma mensagem de derrota */
+void loseGame() {
+  // display 'you lost' screen
+  screenDuration = millis();
+  gameLost = true;
+}
 
 void moverFantasmas() { 
   // find pacman position
@@ -459,21 +532,17 @@ void moverFantasmas() {
      
       int x = (int)Math.round((pFx + 0.5 - margemH/2)/tamanho);
       int y = (int)Math.round((pFy + 0.5 - margemV/1.5)/tamanho);
-      if ((pFantasmas[i][2] - 1 < 0.1) || (pFantasmas[i][2] - 3 < 0.1)) {
-        x = (int)(Math.round((pFx + 0.5 + margemH*3.3)/tamanho)); 
-        y = (int)(Math.round((pFy + 0.5 + margemV*3.6)/tamanho));
-      }
-                                                                                       
-                                                                                       // 1 for up, 2 for down, 3 for left, 4 for right
-                                                                                       if (pFantasmas[i][2] - 1 < 0.1) { // up
-                                                                                         y = (int)Math.round((pFy + 0.5 - margemV*5)/tamanho) + 1;
-                                                                                       } else if (pFantasmas[i][2] - 2 < 0.1) { // down
-                                                                                         y = (int)Math.round((pFy + 0.5 - margemV/2.8)/tamanho);
-                                                                                       } else if (pFantasmas[i][2] - 3 < 0.1) { // left
-                                                                                         x = (int)Math.round((pFx + 0.5 - margemH*2.9)/tamanho) + 1;
-                                                                                       } else if (pFantasmas[i][2] - 4 < 0.1) { // right
-                                                                                         x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
-                                                                                       } 
+      
+       // 1 for up, 2 for down, 3 for left, 4 for right
+       if (pFantasmas[i][2] - 1 < 0.1) { // up
+         y = (int)Math.round((pFy + 0.5 - margemV*5)/tamanho) + 1;
+       } else if (pFantasmas[i][2] - 2 < 0.1) { // down
+         y = (int)Math.round((pFy + 0.5 - margemV/2.8)/tamanho);
+       } else if (pFantasmas[i][2] - 3 < 0.1) { // left
+         x = (int)Math.round((pFx + 0.5 - margemH*2.9)/tamanho) + 1;
+       } else if (pFantasmas[i][2] - 4 < 0.1) { // right
+         x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
+       } 
                                                                                                                   
                                                                                                                   // text(x, 100*(i+1), 200);
                                                                                                                   // text(y, 100*(i+1), 300);
@@ -498,13 +567,13 @@ void moverFantasmas() {
          pFantasmas[i][2] = 2;
        } else {
          if ((pacX - x < 0.2) && (pacX - x > -0.2) && (pacY - y < 0.2) && (pacY - y > -0.2)) {
-           gameOver();
+           loseGame();
          } else {
            obstacle[i] = true;
          } 
        }
      } else { // there is an obstacle between pacman and ghost
-       
+     
        // obstacle above
        if ((pFantasmas[i][2] - 1 < 0.1) || (pacY - y <= 0)) {
            // while obstacle above
@@ -809,9 +878,15 @@ void comerPontos() {
   if (c == white) {  
     if (foodMap[x-1][y-1][0] == 1) {
       foodMap[x-1][y-1][0] = 0;
+      foodCounter--;
       
         // subir pontuacao
         pontuacao += 100 * (5/dificuldade);
+        
+        // verificar se o jogo foi ganho
+        if (foodCounter == 0) {
+          winGame();
+        }
     }
   }     
         
@@ -935,7 +1010,9 @@ float centroY(int lin) {
 
 
 
-// win game
-// menu (also displays scores)
+// choose lose message
+// pause funtionality
+// user name
 // map for medium dificulty
 // eat ghosts cheat code
+// passar todo o codigo para pt
