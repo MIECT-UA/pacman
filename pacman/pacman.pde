@@ -9,8 +9,9 @@ int espacamento = 2;     // espaço livre emtre células
 float margemV, margemH;  // margem livre na vertical e na horizontal para assegurar que as células são quadrangulares
 color corObstaculos =  color(100, 0 , 128);      // cor de fundo dos obstáculos
 
-// Posicao e tamanho do Pacman
+// Posicao, tamanho e cor do Pacman
 float px, py, pRaio;
+color pacColor = color(232, 239, 40);
 
 //velocidade na horizontal e vertical do Pacman
 float vx, vy; 
@@ -18,7 +19,7 @@ float vx, vy;
 // variaveis relacionadas com os fantasmas
 int fantasmas = 4;
 float[][] pFantasmas = new float[fantasmas][3];
-float[] vFantasmas = {0.9, 1, 1.05, 1.13};
+float[] vFantasmas = {1.7, 1.5, 1.95, 2.14};
 int[][][] ghostMap;
 boolean[] obstacle = {false, false, false, false};
 boolean[] ableUp = {true, true, true, true}, ableDown = {true, true, true, true}, 
@@ -32,6 +33,8 @@ boolean gameStarted = false;
 float dificuldade;
 int pontuacao = 0;
 
+// variable that stores velocities, used in stop/restart cheat codes
+float[] stopVel = new float[2];
 
 void setup() {
 
@@ -109,6 +112,46 @@ void keyPressed() {
     } else if (key == 'D' || key == 'd') {
       orientarPacman(4);
     }
+    // cheat codes
+    else if (key == 'Y' || key == 'y') { // "Y"ellow
+      pacColor = color(232, 239, 40);
+      corObstaculos = color(100, 0 , 128);
+    } else if (key == 'G' || key == 'g') { // "G"reen
+      pacColor = color(20, 239, 40);
+      corObstaculos = color(100, 255, 200);
+    } else if (key == 'P' || key == 'p') { // "P"urple (color invertion)
+      pacColor = color(100, 0 , 128);
+      corObstaculos = color(232, 239, 40);
+    } else if (key == 'B' || key == 'b') { // "B"lack (grey [= black and white] pacman and obstacles)
+      pacColor = color(140, 140, 140);
+      corObstaculos = color(70, 70 , 70);
+    }
+    else if (key == 'N' || key == 'n') { // stop movement ("N"o movement)
+      stopVel[0] = vx;
+      stopVel[1] = vy;
+      vx = 0;
+      vy = 0;
+      for (int i = 0; i < fantasmas; i++) {
+        vFantasmas[i] = 0;
+      }
+    } else if (key == 'M' || key == 'm'){ // restart movement ("M"ovement)
+      vx = stopVel[0];
+      vy = stopVel[1];
+      vFantasmas[0] = 1.7; 
+      vFantasmas[1] = 1.5; 
+      vFantasmas[2] = 1.95; 
+      vFantasmas[3] = 2.14;
+    }
+    else if (key == 'F' || key == 'f') { // "F"reeze ghosts
+      for (int i = 0; i < fantasmas; i++) {
+        vFantasmas[i] = 0;
+      }
+    } else if (key == 'U' || key == 'u') { // "U"nfreeze ghosts
+      vFantasmas[0] = 1.7; 
+      vFantasmas[1] = 1.5; 
+      vFantasmas[2] = 1.95; 
+      vFantasmas[3] = 2.14;
+    }
   }
 }
 
@@ -116,15 +159,15 @@ void mouseClicked() {
   if (!gameStarted) {
     if((mouseX >= 50) && (mouseX <= 250) && (mouseY >= 250) && (mouseY <= 350)) {
       // facil
-      dificuldade = 2;
+      dificuldade = 2.60;
       startGame();
     } else if ((mouseX >= 250) && (mouseX <= 450) && (mouseY >= 250) && (mouseY <= 350)) {
       // medio
-      dificuldade = 3.5;
+      dificuldade = 2.30;
       startGame();
     } else if ((mouseX >= 450) && (mouseX <= 650) && (mouseY >= 250) && (mouseY <= 350)) {
       // dificil
-      dificuldade = 5;
+      dificuldade = 1.90;
       startGame();
     }
   }
@@ -406,6 +449,21 @@ void moverFantasmas() {
          } 
      }
      
+     // colisao com margens
+    if (pFx > centroX(nCol)) { 
+      pFx -= vFantasmas[i];
+      pFx = centroX(x); 
+    } else if (pFx < centroX(1)) {
+      pFx += vFantasmas[i];
+      pFx = centroX(x); 
+    } else if (pFy > centroY(nLin)) {
+      pFy -= vFantasmas[i];
+      pFy = centroY(y); 
+    } else if (pFy < centroY(1)) {
+      pFy += vFantasmas[i];
+      pFy = centroY(y); 
+    }
+     
      pFantasmas[i][0] = pFx;
      pFantasmas[i][1] = pFy;
      
@@ -569,7 +627,7 @@ void comerPontos() {
    se o pacman anda da direita para esquerda
 */
 void desenharPacman() {
-  fill(232, 239, 40);
+  fill(pacColor);
   ellipseMode(CENTER);
   noStroke();
   if (vy == 0) {
@@ -594,25 +652,30 @@ void desenharLabirinto () {
   rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
 
   // Desenha obstáculos
-  /*desenharObstaculo(2,2, 3, 1);
-  desenharObstaculo(6,2, 3, 1);
-  desenharObstaculo(10,2, 3, 1);
-  desenharObstaculo(2,4, nCol-2, 1);
-  desenharObstaculo(10,6, 4, 3);
-  desenharObstaculo(7,6, 1, 1);
-  desenharObstaculo(2,6, 3, 2); */
-  
-  desenharObstaculo(2,2, nCol-9, 1);
-  desenharObstaculo(8,2, nCol-8, 1); 
-  desenharObstaculo(3,3, nCol-13, nLin-6);
-  desenharObstaculo(5,4, nCol-13, nLin-6);
-  desenharObstaculo(2,8, nCol-4, nLin-9);
-  desenharObstaculo(1,4, nCol-13, nLin-7);
-  desenharObstaculo(8,5, nCol-12, nLin-8);
-  desenharObstaculo(1,10, nCol-1, nLin-9);
-  desenharObstaculo(13,6, nCol-13, nLin-6);
-  desenharObstaculo(11,6, nCol-11, nLin-9);
-  desenharObstaculo(12,4, nCol-13, nLin-9);
+  if (dificuldade == 2.60) { // easy map
+    desenharObstaculo(2,2, 3, 1);
+    desenharObstaculo(6,2, 3, 1);
+    desenharObstaculo(10,2, 3, 1);
+    desenharObstaculo(2,4, nCol-2, 1);
+    desenharObstaculo(11,6, 3, 3);
+    desenharObstaculo(7,6, 1, 1);
+    desenharObstaculo(2,6, 3, 2);
+    desenharObstaculo(2,9, 6, 1);
+    desenharObstaculo(9,6, 1, 4);
+  } /* else if (dificuldade == 2.30) {} */ else {
+    // hard map
+    desenharObstaculo(2,2, nCol-9, 1);
+    desenharObstaculo(8,2, nCol-8, 1); 
+    desenharObstaculo(3,3, nCol-13, nLin-6);
+    desenharObstaculo(5,4, nCol-13, nLin-6);
+    desenharObstaculo(2,8, nCol-4, nLin-9);
+    desenharObstaculo(1,4, nCol-13, nLin-7);
+    desenharObstaculo(8,5, nCol-12, nLin-8);
+    desenharObstaculo(1,10, nCol-1, nLin-9);
+    desenharObstaculo(13,6, nCol-13, nLin-6);
+    desenharObstaculo(11,6, nCol-11, nLin-9);
+    desenharObstaculo(12,4, nCol-13, nLin-9); 
+  }
   
 }
 
