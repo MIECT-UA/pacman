@@ -35,13 +35,14 @@ int foodCounter = 0;
 boolean gameStarted = false;
 boolean gameWon = false;
 boolean gameLost = false;
+boolean gameInstructions = true; // false;
 float dificuldade;
 float facil = 2.60, medio = 2.30, dificil = 1.90;
 String nivel;
 int pontuacao = 0;
 PImage introPac;
 
-// variables for win screen
+// variables for message screens
 int screenDuration;
 int messageScreenDuration = 3000;
 
@@ -178,6 +179,25 @@ void draw(){
         e.printStackTrace();
     }
     
+  } else if (gameInstructions) {
+    fill(0);
+    stroke(pacColor);
+    strokeWeight(espacamento);
+    rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
+    
+    fill(pacColor);
+    textSize(40);
+    text("Como jogar", 100, 100);  
+    fill(255);
+    textSize(30);
+    text("  Usa as setas ou as teclas WASD para", 50, 150);
+    text("movimentares o pacman. ", 50, 190); 
+    text("  O objetivo é comeres todas os pontos", 50, 240);
+    text("brancos, mas cuidado com os fantasmas!", 50, 280);
+    text("Se eles te apanharem, perdes o jogo!", 50, 320);
+    text("  Carrega no rato ou em qualquer tecla", 50, 370); 
+    text("para continuares.", 50, 410);
+  
   } else if (gameWon) {
     fill(0);
     stroke(pacColor);
@@ -242,8 +262,10 @@ void draw(){
 }
 
 void keyPressed() {
-  // pacman direction
-  if (key == CODED) {
+  if (gameInstructions) {
+    gameInstructions = false;
+  } else if (key == CODED) { 
+    // pacman direction
     if (keyCode == UP) {
       orientarPacman(1);
     } else if (keyCode == DOWN) {
@@ -387,6 +409,9 @@ void keyPressed() {
 }
 
 void mouseClicked() {
+  if (gameInstructions) {
+    gameInstructions = false;
+  }
   if (!gameStarted && (mouseX >= 0) && (mouseX <= width*2/3)) {
      if ((mouseY >= 150) && (mouseY < 300)) { // facil
       nivel = "fácil";
@@ -411,6 +436,8 @@ void mouseClicked() {
 
 // sets up several variables in order to start the game
 void startGame(float dif) {
+  gameInstructions = true;
+  
   dificuldade = dif;
   
   // Inicializar o Pacman
@@ -1156,6 +1183,7 @@ void resetScores() {
 }
 
 // TODO
-// user name
 // map for medium dificulty
+// instructions screen
 // passar todo o codigo para pt
+// user name
