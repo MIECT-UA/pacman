@@ -570,6 +570,7 @@ void startGame(float dif) {
   foodCounter = 0;
   dificuldade = dif;
   pontuacao = 0;
+  extraSpeed = 0;
   
   // Mudar para o som do jogo
   menu.stop();
