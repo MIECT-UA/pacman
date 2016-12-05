@@ -1,6 +1,6 @@
 import java.util.*;
 import java.io.*;
-
+import processing.sound.*;
 
 // Parâmetros do labirinto
 int nCol, nLin;          // nº de linhas e de colunas
@@ -21,7 +21,7 @@ int fantasmas = 4;
 float[][] pFantasmas = new float[fantasmas][3];
 color[] ghostColor = {color(66, 197, 244) /* blue */, color(244, 164, 66)/* orange */, 
                       color(244, 75, 66)/* red */, color(247, 173, 211)/* pink */};
-float[] vFantasmas = {1.7, 1.5, 1.95, 2.07};
+float[] vFantasmas = {1.7, 1.5, 1.95, 2.1};
 int[][][] ghostMap;
 boolean[] obstacle = {false, false, false, false};
 boolean[] ableUp = {true, true, true, true}, ableDown = {true, true, true, true}, 
@@ -38,10 +38,11 @@ boolean gameWon = false;
 boolean gameLost = false;
 boolean gameInstructions = true; // false;
 float dificuldade;
-float facil = 3.0, medio = 2.70, dificil = 2.10;
+float facil = 3.0, medio = 2.70, dificil = 2.15;
 String nivel = "secreto";
 int pontuacao = 0;
 PImage introPac;
+SoundFile menu, game;
 
 // variables for message screens
 int screenDuration;
@@ -86,10 +87,14 @@ void setup() {
   foodMap = new int[nCol][nLin][1];
   ghostMap = new int[nCol+2][nLin+2][1];
   
+  // Inicializar imagens e sons
   introPac = loadImage("pacman.png");
- 
-  frameRate(60);
+  menu = new SoundFile(this, "menu.mp3");
+  game = new SoundFile(this, "game.mp3");
   
+  menu.loop();
+  
+  frameRate(60);
 }
 
 void draw(){
@@ -97,7 +102,6 @@ void draw(){
   
   // Menu + pontuacoes
   if (!jogoIniciado) {
-    // intro screen
     // menu
     fill(0, 0);
     stroke(pacColor);
@@ -149,7 +153,7 @@ void draw(){
             case "Dificil":
               index = 2;
               break;
-            // by default = cheat codes used
+            // por omissao = cheat codes
           }
           for(int i = 0; i < 3; i++) {
             int temp = Integer.parseInt(parts[1]);
@@ -168,11 +172,9 @@ void draw(){
         input.close();
         
         fill(color(255, 255, 255));
-        // print each highscore
+        // escrever cada highscore
         for (int i = 0; i < 4; i++) {
-          //text("Médio", margemH*3 + width*2/3, margemV*4.35 + (height - 5*margemV)*1/4); 
           for (int j = 0; j < 3; j++) {
-            // rect(x, margemV*(i+1) + (height - 5*margemV)*i/4, width*1/3 - 3*margemH,  (height - 5*margemV)/4);
             text(scoresArray[i][j], margemH*13 + width*2/3, margemV*(i+6.25) + (height - 5*margemV)*(i)/4 + 27*j); 
           }
         }
@@ -182,6 +184,7 @@ void draw(){
     }
     
   } else if (gameInstructions) {
+  
     fill(0);
     stroke(pacColor);
     strokeWeight(espacamento);
@@ -374,10 +377,8 @@ void draw(){
 void keyPressed() {
   if (gameInstructions) {
     gameInstructions = false;
-  } else if (cheatList) {
-    cheatList = false;
-    paused = false;
-  } if (key == CODED) { 
+  } 
+  if (key == CODED) { 
     // pacman direction
     if (keyCode == UP) {
       orientarPacman(1);
@@ -485,7 +486,8 @@ void keyPressed() {
     } else if (key == 'I' || key == 'i') { // "I"nvert colors
       pacColor = color(100, 0 , 128);
       corObstaculos = color(232, 239, 40);
-    } else if (key == 'B' || key == 'b') { // "B"lack (grey [= black and white] pacman and obstacles)
+    } else if (key == 'B' || key == 'b') { 
+      // "B"lack (grey [= black and white] pacman and obstacles)
       pacColor = color(140, 140, 140);
       corObstaculos = color(70, 70 , 70);
     }
@@ -493,7 +495,8 @@ void keyPressed() {
     else if (key == 'Q' || key == 'q') { // "Q"uit the game
       perder();
     }
-    else if (key == ' ' || key == 'P' || key == 'p') { // "P"ause and unpause the game
+    else if (key == ' ' || key == 'P' || key == 'p') { 
+      // "P"ause and unpause the game
       if (!paused) {
         // pause
         stopVel[0] = vx;
@@ -520,8 +523,13 @@ void keyPressed() {
     }
     
     if (key == 'C' || key == 'c') { // Pases games and shows a list of cheat codes
-      cheatList = true;
-      paused = true;
+      if(cheatList) {
+        cheatList = false;
+        paused = false;
+      } else {
+        cheatList = true;
+        paused = true;
+      }
     }
   }
 }
@@ -563,6 +571,10 @@ void startGame(float dif) {
   dificuldade = dif;
   pontuacao = 0;
   
+  // Mudar para o som do jogo
+  menu.stop();
+  game.loop();
+  
   // Inicializar o Pacman
   px = centroX(5);
   py = centroY(1);
@@ -590,6 +602,17 @@ void startGame(float dif) {
   vFantasmas[1] = 1.5; 
   vFantasmas[2] = 1.95; 
   vFantasmas[3] = 2.14;
+  
+  // Ajustar velocidade dos fantasmas
+  if ((int)(dif*100) == (int)(facil*100)) {
+    for (int i = 0; i < fantasmas; i++) {
+      vFantasmas[i] -= 1;
+    }
+  } else if ((int)(dif*100) == (int)(medio*100)) {
+    for (int i = 0; i < fantasmas; i++) {
+      vFantasmas[i] -= 0.4;
+    }
+  }
   
   // run all the functions that make up the game one time before draw does,
   // in order to set up food and ghost maps
@@ -641,6 +664,10 @@ void startGame(float dif) {
 
 /* Guarda a pontuacao e reinicia o jogo */
 void terminarJogo() {
+  // mudar para o som do menu
+  game.stop();
+  menu.loop();
+  
   // guardar pontuacao
   try {
         // abrir ficheiro
@@ -682,7 +709,7 @@ void terminarJogo() {
                 }
                 scoresArray[index][i+1] = scoresArray[index][i];
               }
-              scoresArray[index][i] = temp;
+              scoresArray[index][i] = temp; //<>//
               break;
             }
           }
@@ -699,7 +726,7 @@ void terminarJogo() {
             case 270:
               currentGameIndex = 1;
               break;
-            case 210:
+            case 215:
               currentGameIndex = 2;
               break;
           }
@@ -773,8 +800,7 @@ void moverFantasmas() {
       pacX = (int)(Math.round((px + 0.5 + margemH*3.3)/tamanho)); 
       pacY = (int)(Math.round((py + 0.5 + margemV*3.3)/tamanho));
   }
-                                                                                                                                   text(pacX, 500, 200); 
-                                                                                                                                   text(pacY, 500, 300);
+  
    for (int i = 0; i < fantasmas; i++) {
 
      float pFx = pFantasmas[i][0];
@@ -785,20 +811,18 @@ void moverFantasmas() {
       
        // ajustar a posicao dos fantasmas, para criar um movimento mais fluido
        if (pFantasmas[i][2] - 1 < 0.1) { // para cima
-         y = (int)Math.round((pFy + 0.5 - margemV*5)/tamanho) + 1;
+         y = (int)Math.round((pFy + 0.5 - margemV*2)/tamanho) + 1;
        } else if (pFantasmas[i][2] - 2 < 0.1) { // para baixo
          y = (int)Math.round((pFy + 0.5)/tamanho);
        } else if (pFantasmas[i][2] - 3 < 0.1) { // para a esquerda
-         x = (int)Math.round((pFx + 0.5 - margemH*2.9)/tamanho) + 1;
+         x = (int)Math.round((pFx + 0.5 - margemH*2)/tamanho) + 1;
        } else if (pFantasmas[i][2] - 4 < 0.1) { // para a direita
          x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
        } 
-                                                                                                                                   text(x, 300 + 50 * i, 200); 
-                                                                                                                                   text(y, 300 + 50 * i, 300);
-     
+                                                                                                                                   
      if (!obstacle[i]) {
        // perseguir pacman
-       if ((pacX - x < 0) && (ghostMap[x-1][y][0] == 1)) { // ir para a esquerda
+       if ((pacX - x < 0) && (ghostMap[x-1][y][0] == 1)) { // ir para a esquerda //<>//
          pFx -= vFantasmas[i];
          pFy = centroY(y); 
          pFantasmas[i][2] = 3;
@@ -817,9 +841,7 @@ void moverFantasmas() {
        } else {
          if ((pacX - x < 0.5) && (pacX - x > -0.5) && (pacY - y < 0.5) && (pacY - y > -0.5)) {
            // certificar que um fantasma esta a tocar o pacman
-           if ((get((int)(px - pRaio), (int)py) != pacColor) || (get((int)(px + pRaio), (int)py) != pacColor)
-               || (get((int)px, (int)(py -  pRaio)) != pacColor) || (get((int)px, (int)(py +  pRaio)) != pacColor)
-               || (get((int)px, (int)py) != pacColor)) { 
+           if (get((int)px, (int)py) != pacColor) { 
              if (!eatMode) {
                perder();
              } else { // comer fantasma
@@ -840,26 +862,30 @@ void moverFantasmas() {
            obstacle[i] = true;
          } 
        }
-     } else { // ha um obstaculo entre o fantasma e o pacman
-       text("obs", 100, 100);
-       if (dirObstaculoFantasma[i] == 0) {
+     } else { 
+       // ha um obstaculo entre o fantasma e o pacman
+       if (dirObstaculoFantasma[i] == 0) { // o obstaculo esta a aparecer pela primeira vez
           if ((pacY != y)) {
-            if (((pFantasmas[i][2] - 1 < 0.1) && (pFantasmas[i][2] - 1 > -0.1) && (ghostMap[x][y-1][0] == 0)) || (pacY - y < 0)) { // obstaculo esta acima do fantasma
+            if (((pFantasmas[i][2] - 1 < 0.1) && (pFantasmas[i][2] - 1 > -0.1) && (ghostMap[x][y-1][0] == 0)) || (pacY - y < 0)) { 
+              // obstaculo esta acima do fantasma
               dirObstaculoFantasma[i] = 1; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);} // obs cima
-            else if (((pFantasmas[i][2] - 2 < 0.1) && (pFantasmas[i][2] - 2 > -0.1) && (ghostMap[x][y+1][0] == 0)) || (pacY - y > 0)) { // obstaculo esta abaixo do fantasma
+            else if (((pFantasmas[i][2] - 2 < 0.1) && (pFantasmas[i][2] - 2 > -0.1) && (ghostMap[x][y+1][0] == 0)) || (pacY - y > 0)) { 
+              // obstaculo esta abaixo do fantasma
               dirObstaculoFantasma[i] = 2; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);} // obs baixo
           } else if (pacX != x) {
-            if (((pFantasmas[i][2] - 3 < 0.1) && (pFantasmas[i][2] - 3 > -0.1) && (ghostMap[x-1][y][0] == 0)) || (pacX - x <= 0)) { // obstaculo esta a esquerda do fantasma
+            if (((pFantasmas[i][2] - 3 < 0.1) && (pFantasmas[i][2] - 3 > -0.1) && (ghostMap[x-1][y][0] == 0)) || (pacX - x <= 0)) { 
+              // obstaculo esta a esquerda do fantasma
               dirObstaculoFantasma[i] = 3; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);
-            } else if (((pFantasmas[i][2] - 4 < 0.1) && (pFantasmas[i][2] - 4 > -0.1) && (ghostMap[x+1][y][0] == 0)) || (pacX - x > 0))  { // obstaculo esta a direita do fantasma
+            } else if (((pFantasmas[i][2] - 4 < 0.1) && (pFantasmas[i][2] - 4 > -0.1) && (ghostMap[x+1][y][0] == 0)) || (pacX - x > 0))  { 
+              // obstaculo esta a direita do fantasma
               dirObstaculoFantasma[i] = 4; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);
             }
           }
-       } else {
+       } else { // continuar a contornar o obstaculo
          contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);
        }
        
@@ -889,15 +915,20 @@ void moverFantasmas() {
   }
 }
 
+/* Implementa o movimento do Pacman, adicionando a 
+ * sua velocidade a sua posicao
+ */
 void moverPacman() {
   px += vx;
   py += vy;
 }
 
+/* Implenta a inteligencia artificial dos fantasmas para que estes
+ * consigam contornar obstaculos
+ */
 void contornarObstaculo(int fantasma, int pacX, int pacY, int x, int y, float pFx, float pFy) {
 
   if (dirObstaculoFantasma[fantasma] == 1) { // obstacle above
-                                                                                                 text("obs. UP", 100, 200);
      // while obstacle above
      if(ghostMap[x][y-1][0] != 1) {
      // move either left or right until obstacle is no longer above
@@ -932,7 +963,6 @@ void contornarObstaculo(int fantasma, int pacX, int pacY, int x, int y, float pF
    } 
    
    else if (dirObstaculoFantasma[fantasma] == 2) {
-                                                                                                 text("obs. DOWN", 100, 250);
    // while obstacle below
      if(ghostMap[x][y+1][0] != 1) { 
      // move either left or right until obstacle is no longer below
@@ -967,7 +997,6 @@ void contornarObstaculo(int fantasma, int pacX, int pacY, int x, int y, float pF
    }
    
    else if (dirObstaculoFantasma[fantasma] == 3) {
-                                                                                                 text("obs. LEFT", 100, 300);
      // enquanto houver um obstaculo a esquerda do fantasma
      if(ghostMap[x-1][y][0] != 1) {
        // ir para cima ou para baixo ate deixar de existir um obstaculo a direita do fantasma
@@ -1000,7 +1029,6 @@ void contornarObstaculo(int fantasma, int pacX, int pacY, int x, int y, float pF
        dirObstaculoFantasma[fantasma] = 0;
      }  
    } else { // dirObstaculoFantasma[fantasma] = 4  
-                                                                                               text("obs. RIGHT", 100, 350);
      // enquanto houver um obstaculo a direita do fantasma
      if(ghostMap[x+1][y][0] != 1) {
        // ir para cima ou para baixo ate deixar de existir um obstaculo a direita do fantasma
@@ -1048,7 +1076,20 @@ void contornarObstaculo(int fantasma, int pacX, int pacY, int x, int y, float pF
 void orientarPacman(int direction) { 
   int x = (int)(Math.round((px + 0.5 - margemH/2)/tamanho));
   int y = (int)(Math.round((py + 0.5 - margemV/2)/tamanho));
+  
+  // se o jogo estivar pausado, e uma tecla diretional 
+  // tiver sido carregada, sair da pausa
+  if ((direction != 0 ) && (paused)) {
+    vx = stopVel[0];
+    vy = stopVel[1];
+    vFantasmas[0] = 1.7; 
+    vFantasmas[1] = 1.5; 
+    vFantasmas[2] = 1.95; 
+    vFantasmas[3] = 2.14;
+    paused = false;
+  }
          
+  // mudar a direcao do pacman, se for o caso       
   switch (direction) {
       
     case 1: // cima
@@ -1130,6 +1171,9 @@ void orientarPacman(int direction) {
   }
 }
 
+/* Desenha os quatro fantasmas, tendo em atencao
+ * a direcao para onde os olhos estam virados
+ */
 void desenharFantasmas() {
   
   for (int i = 0; i < fantasmas; i++) {
@@ -1216,9 +1260,9 @@ void comerPontos() {
 }
 
 /* Desenha o pacman - recebe um boolean - verdadeiro 
-   se o pacman anda da esquerda para a direita, falso
-   se o pacman anda da direita para esquerda
-*/
+ * se o pacman anda da esquerda para a direita, falso
+ * se o pacman anda da direita para esquerda
+ */
 void desenharPacman() {
   fill(pacColor);
   ellipseMode(CENTER);
@@ -1240,7 +1284,7 @@ void desenharPacman() {
   }
 }
 
-
+/* Desenha o ecra do jogo (o fundo e os obstaculos) */
 void desenharLabirinto () {
 
   // desenha a fronteira da área de jogo
@@ -1256,11 +1300,13 @@ void desenharLabirinto () {
     desenharObstaculo(10, 2, 3, 1);
     desenharObstaculo(2, 4, 5, 1);
     desenharObstaculo(8, 4, 6, 1);
-    desenharObstaculo(11, 6, 3, 3);
     desenharObstaculo(7,6, 1, 1);
     desenharObstaculo(2,6, 3, 2);
     desenharObstaculo(2,9, 6, 1);
     desenharObstaculo(9,6, 1, 4);
+    desenharObstaculo(11, 6, 1, 1);
+    desenharObstaculo(11, 9, 1, 1);
+    desenharObstaculo(13, 6, 1, 4);
   }  else if (dificuldade == medio) {
     // mapa medio
     desenharObstaculo(5, 4, 6, 1);
@@ -1300,11 +1346,11 @@ void desenharLabirinto () {
 }
 
 /* Desenha um obstáculo interno de um labirinto:
-   x: índice da célula inicial segundo eixo dos X - gama (1..nCol) 
-   y: índice da célula inicial segundo eixo dos Y - gama (1..nLin)
-   numC: nº de colunas (células) segundo eixo dos X (largura do obstáculo)
-   numL: nº de linhas (células) segundo eixo dos Y (altura do obstáculo) 
-*/
+ * x: índice da célula inicial segundo eixo dos X - gama (1..nCol) 
+ * y: índice da célula inicial segundo eixo dos Y - gama (1..nLin)
+ * numC: nº de colunas (células) segundo eixo dos X (largura do obstáculo)
+ * numL: nº de linhas (células) segundo eixo dos Y (altura do obstáculo) 
+ */
 void desenharObstaculo(int x, int y, int numC, int numL) {
   float x0, y0, larg, comp;
   
@@ -1319,10 +1365,10 @@ void desenharObstaculo(int x, int y, int numC, int numL) {
   rect(x0, y0, larg, comp);
 }
 
-/*
-Desenhar pontos nas células vazias (que não fazem parte de um obstáculo). 
-Esta função usa a cor de fundo no ecrã para determinar se uma célula está vazia ou se faz parte de um obstáculo.
-*/
+/* Desenhar pontos nas células vazias (que não fazem parte de um obstáculo). 
+ * Esta função usa a cor de fundo no ecrã para determinar se uma célula está 
+ * vazia ou se faz parte de um obstáculo.
+ */
 void desenharPontos() {
   ellipseMode(CENTER);
   fill(255);
@@ -1370,9 +1416,11 @@ void resetScores() {
 
 // TODO
 // passar todo o codigo para pt
-// sound
+// sair da pausa quando se carrega numa tecla direticional
+
+// WISHLIST
+// improve even more ghost ai
 
 // BUGS
-// ghost AI
-// jumpy movement (for pac and ghosts)
+// jumpy movement (for pac and ghosts) -> can cause unfair and frustrating loss
 // pacman can on rare intances go through ghost without being eaten
