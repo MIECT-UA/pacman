@@ -11,57 +11,63 @@ color corObstaculos =  color(100, 0 , 128);      // cor de fundo dos obstáculos
 
 // Posicao, tamanho e cor do Pacman
 float px, py, pRaio;
-color pacColor = color(255, 253, 56);
+color corPacman = color(255, 253, 56);
 
 //velocidade na horizontal e vertical do Pacman
 float vx, vy; 
  
 // variaveis relacionadas com os fantasmas
-int fantasmas = 4;
-float[][] pFantasmas = new float[fantasmas][3];
-color[] ghostColor = {color(66, 197, 244) /* blue */, color(244, 164, 66)/* orange */, 
-                      color(244, 75, 66)/* red */, color(247, 173, 211)/* pink */};
-float[] vFantasmas = {1.7, 1.5, 1.95, 2.1};
-int[][][] ghostMap;
-boolean[] obstacle = {false, false, false, false};
-boolean[] ableUp = {true, true, true, true}, ableDown = {true, true, true, true}, 
-          ableLeft = {true, true, true, true}, ableRight = {true, true, true, true};
-int[] dirObstaculoFantasma = new int[4];
+int fantasmas = 4; // nº de fantasmas
+float[][] posFantasmas = new float[fantasmas][3]; // posicoes dos fantasmas
+color[] corFantasmas = {color(66, 197, 244) /* azul */, color(244, 164, 66)/* laranja */, 
+                      color(244, 75, 66)/* vermelho */, color(247, 173, 211)/* rosa */};
+float[] vFantasmas = {1.7, 1.5, 1.95, 2.1}; // velocidades dos fantasmas
+int[][] mapaFantasmas;
+boolean[] obstaculo = {false, false, false, false}; // se um dos fantasmas se encontra a contornar um obstaculo
+// se os fantasmas tem ou nao um obstaculo na respetiva direcao
+boolean[] fanPodeCima = {true, true, true, true}, fanPodeBaixo = {true, true, true, true}, 
+          fanPodeEsq = {true, true, true, true}, fanPodeDir = {true, true, true, true};
+int[] dirObstaculoFantasma = new int[4]; // a direcao que o fantasma segui quando encontrou um obstaculo
 
-// matriz e counter da comida
-int[][][] foodMap;
-int foodCounter = 0;
+// matriz e contador da comida
+int[][] mapaComida;
+int contadorComida = 0;
 
-// outras variaveis
+// variaveis que controlam o ecra mostrado ao utilizador
 boolean jogoIniciado = false;
-boolean gameWon = false;
-boolean gameLost = false;
-boolean gameInstructions = true; // false;
+boolean jogoGanho = false;
+boolean jogoPerdido = false;
+boolean instrucoes = false;
+
+// vairaveis que controlam o nivel de dificuldade e a pontuacao
 float dificuldade;
 float facil = 3.0, medio = 2.70, dificil = 2.15;
-String nivel = "secreto";
+String nivel = "";
 int pontuacao = 0;
-PImage introPac;
-SoundFile menu, game;
 
-// variables for message screens
-int screenDuration;
-int messageScreenDuration = 1900;
+// variaveis relacionadas com imagens e sons
+PImage introPacImg;
+SoundFile somMenu, somJogo;
 
-// variable that stores velocities, used in pause/unpause functionality
+// variaveis para controlar a duracao dos ecra de vitoria e derrota
+int duracaoEcra;
+int duracaoMaxEcra = 1900;
+
+// variaveis que armazenam velocidade, usados na funcionalidade de pausa
 float[] stopVel = new float[2];
-boolean paused = false;
+boolean pausa = false;
 boolean cheatList = false;
 
-// variables for eat mode cheat code
-boolean eatMode = false;
-boolean[] ghostEaten = new boolean[4];
+//variaveis para controlar o modo de comer fantasmas
+boolean modoComer = false;
+boolean[] fantasmaComido = new boolean[4];
 
-// extra speed variable for increase/decrease velocity cheat codes
-float extraSpeed = 0;
+// variavel que armazena velocidade extra para o cheat
+// code de aumentar/repor a velocidade do pacman
+float velExtra = 0;
 
-// flag for cheat codes used
-boolean cheatsUsed = false;
+// verifica se foram usados cheat codes
+boolean cheatsUsados = false;
 
 void setup() {
 
@@ -69,7 +75,9 @@ void setup() {
   size(720, 520);
   background(0);
   
-  smooth();
+  // icone e titulo da janela                                                                                                                      
+  surface.setIcon(loadImage("icon.png"));
+  surface.setTitle("Pacman");
   
   nCol = (int)width/tamanho;
   nLin = (int)height/tamanho;
@@ -84,15 +92,15 @@ void setup() {
   // Inicializar o Pacman e as estruturas internas de comida e fantasmas
   pRaio = tamanho / 2;
   
-  foodMap = new int[nCol][nLin][1];
-  ghostMap = new int[nCol+2][nLin+2][1];
+  mapaComida = new int[nCol][nLin];
+  mapaFantasmas = new int[nCol+2][nLin+2];
   
   // Inicializar imagens e sons
-  introPac = loadImage("pacman.png");
-  menu = new SoundFile(this, "menu.mp3");
-  game = new SoundFile(this, "game.mp3");
+  introPacImg = loadImage("pacman.png");
+  somMenu = new SoundFile(this, "menu.mp3");
+  somJogo = new SoundFile(this, "game.mp3");
   
-  menu.loop();
+  somMenu.loop();
   
   frameRate(60);
 }
@@ -100,21 +108,20 @@ void setup() {
 void draw(){
   background(0);
   
-  // Menu + pontuacoes
-  if (!jogoIniciado) {
+  if (!jogoIniciado) { // ecra do menu e highscores
     // menu
     fill(0, 0);
-    stroke(pacColor);
+    stroke(corPacman);
     strokeWeight(espacamento);
     
-    image(introPac, margemH*2, 0, 0.371875*(height - 2*margemV), height - 2*margemV);
+    image(introPacImg, margemH*2, 0, 0.371875*(height - 2*margemV), height - 2*margemV);
     
     rect(margemH, margemV, width*2/3, height - 2*margemV);
     for (int i = 0; i < 4; i++) {
       rect(margemH*2 + width*2/3, margemV*(i+1) + (height - 5*margemV)*i/4, width*1/3 - 3*margemH,  (height - 5*margemV)/4);
     }
     
-    fill(pacColor);
+    fill(corPacman);
     textSize(120);
     text("P", 200, 125);
     textSize(60);
@@ -126,7 +133,7 @@ void draw(){
     text("Difícil", 200, 480); 
 
     // highscores
-    fill(pacColor);
+    fill(corPacman);
     textSize(25);
     text("Fácil", margemH*3 + width*2/3, margemV*3.36); 
     text("Médio", margemH*3 + width*2/3, margemV*4.39 + (height - 5*margemV)*1/4); 
@@ -137,34 +144,34 @@ void draw(){
       File fout = new File("highscores.txt");
       if(fout.exists()){
         Scanner input = new Scanner(fout);
-        int[][] scoresArray = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
+        int[][] pontuacoes = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
         while(input.hasNextLine()) {
           String line = input.nextLine();
           String[] parts = line.split(":");
           
-          int index = 3;
+          int indice = 3;
           switch (parts[0]) {
             case "Facil":
-              index = 0;
+              indice = 0;
               break;
             case "Medio":
-              index = 1;
+              indice = 1;
               break;
             case "Dificil":
-              index = 2;
+              indice = 2;
               break;
             // por omissao = cheat codes
           }
           for(int i = 0; i < 3; i++) {
             int temp = Integer.parseInt(parts[1]);
-            if (temp > scoresArray[index][i]) {
+            if (temp > pontuacoes[indice][i]) {
               if (i != 2) {
                 if (i == 0) {
-                  scoresArray[index][i+2] = scoresArray[index][i+1];
+                  pontuacoes[indice][i+2] = pontuacoes[indice][i+1];
                 }
-                scoresArray[index][i+1] = scoresArray[index][i];
+                pontuacoes[indice][i+1] = pontuacoes[indice][i];
               }
-              scoresArray[index][i] = temp;
+              pontuacoes[indice][i] = temp;
               break;
             }
           }
@@ -175,7 +182,7 @@ void draw(){
         // escrever cada highscore
         for (int i = 0; i < 4; i++) {
           for (int j = 0; j < 3; j++) {
-            text(scoresArray[i][j], margemH*13 + width*2/3, margemV*(i+6.25) + (height - 5*margemV)*(i)/4 + 27*j); 
+            text(pontuacoes[i][j], margemH*13 + width*2/3, margemV*(i+6.25) + (height - 5*margemV)*(i)/4 + 27*j); 
           }
         }
       }
@@ -183,14 +190,13 @@ void draw(){
         e.printStackTrace();
     }
     
-  } else if (gameInstructions) {
-  
+  } else if (instrucoes) { // ecra de instrucoes
     fill(0);
-    stroke(pacColor);
+    stroke(corPacman);
     strokeWeight(espacamento);
     rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
     
-    fill(pacColor);
+    fill(corPacman);
     textSize(40);
     text("Como jogar", 100, 100);  
     fill(255);
@@ -202,14 +208,17 @@ void draw(){
     text("Se eles te apanharem, perdes o jogo!", 50, 320);
     text("  Carrega no rato ou em qualquer tecla", 50, 370); 
     text("para continuares.", 50, 410);
+    
+    textSize(15);
+    text("PS. Carrega em 'C'  ;)", 555, 505);
   
-  } else if (gameWon) {
+  } else if (jogoGanho) { // ecra de vitoria
     fill(0);
-    stroke(pacColor);
+    stroke(corPacman);
     strokeWeight(espacamento);
     rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
     
-    fill(pacColor);
+    fill(corPacman);
     textSize(100);
     text("Parabéns!", 100, 200);
     fill(255);
@@ -217,141 +226,122 @@ void draw(){
     text("Venceste o nível " + nivel + ", com ", 40, 300); 
     text("uma pontuação de " + String.valueOf(pontuacao) + " pontos!", 40, 370);
     
-    if (millis() - screenDuration > messageScreenDuration) {
-      // exit win screen
-      gameWon = false;
-      // end game
+    if (millis() - duracaoEcra > duracaoMaxEcra) {
+      // sair do ecra de vitoria
+      jogoGanho = false;
       terminarJogo();
     }
     
-  } else if (gameLost) {
+  } else if (jogoPerdido) { // ecra de derrota
     fill(0);
-    stroke(pacColor);
+    stroke(corPacman);
     strokeWeight(espacamento);
     rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
     
-    fill(pacColor);
+    fill(corPacman);
     textSize(85);
-    //text("Oh não!", 65, 200);
     text("Ghostbusted!", 65, 200);
     fill(255);
     textSize(40);
     text("Perdeste no nível " + nivel + ", com ", 40, 300); 
     text("uma pontuação de " + String.valueOf(pontuacao) + " pontos!", 40, 370);
     
-    if (millis() - screenDuration > messageScreenDuration) {
-      // exit lose screen
-      gameLost = false;
-      // end game
+    if (millis() - duracaoEcra > duracaoMaxEcra) {
+      // sair do ecra de derrota
+      jogoPerdido = false;
       terminarJogo();
     }
   } else if (cheatList) {
     fill(0);
-    stroke(pacColor);
+    stroke(corPacman);
     strokeWeight(espacamento);
     rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
     
     // titulo
-    fill(pacColor);
+    fill(corPacman);
     textSize(30);
     text("Cheat Codes", width/2 - 90, 60);
     
     // seccao de cores
-    fill(pacColor, 200);
+    fill(corPacman, 200);
     textSize(27);
     text("Mudar o tema", 70, 100);
     
-    // teclas e o seu significado
+    // teclas G, B, I e Y
     textSize(20);
-    fill(pacColor);
+    fill(corPacman);
     text("G", 50, 130);
-    fill(255);
-    text("Tema Verde", 100, 130);
-    fill(pacColor);
     text("B", 50, 160);
-    fill(255);
-    text("Tema Cinzento", 100, 160);
-    fill(pacColor);
     text("I", 50, 190);
-    fill(255);
-    text("Inverter o tema original", 100, 190);
-    fill(pacColor);
     text("Y", 50, 220);
     fill(255);
+    text("Tema Verde", 100, 130);
+    text("Tema Cinzento", 100, 160);
+    text("Inverter o tema original", 100, 190);
     text("Tema original", 100, 220);
     
     // seccao dos fantasmas
-    fill(pacColor, 200);
+    fill(corPacman, 200);
     textSize(27);
     text("Fantasmas", 70, 260);
     
-    // teclas e o seu significado
+    // teclas F, U e E
     textSize(20);
-    fill(pacColor);
+    fill(corPacman);
     text("F", 50, 290);
-    fill(255);
-    text("Congelar os fantasmas", 100, 290);
-    fill(pacColor);
     text("U", 50, 320);
-    fill(255);
-    text("Descongelar os fantasmas", 100, 320);
-    fill(pacColor);
     text("E", 50, 360);
     fill(255);
+    text("Congelar os fantasmas", 100, 290);
+    text("Descongelar os fantasmas", 100, 320);
     text("Ativar/ Desativar modo", 100, 350);
     text("de comer fantasmas", 100, 370);
     
     // seccao de comandos
-    fill(pacColor, 200);
+    fill(corPacman, 200);
     textSize(27);
     text("Sair ou Pausar", 70, 410);
     
-    // teclas e o seu significado
+    // teclas P e Q
     textSize(20);
-    fill(pacColor);
+    fill(corPacman);
     text("P", 50, 450);
-    fill(255);
-    text("Pausa ou continua o jogo", 100, 450); 
-    fill(pacColor);
     text("Q", 50, 480);
     fill(255);
+    text("Pausa ou continua o jogo", 100, 450); 
     text("Sai do jogo atual", 100, 480); 
     
     // secao da velocidade do pacman
-    fill(pacColor, 200);
+    fill(corPacman, 200);
     textSize(27);
     text("Velocidade", 470, 100);
     
-    // teclas e o seu significado
+    // teclas V/+ e -
     textSize(20);
-    fill(pacColor);
+    fill(corPacman);
     text("V", 420, 130);
     text("ou +", 405, 150);
+    text("-", 420, 190);
     fill(255);
     text("Aumenta a velocidade", 470, 130); 
     text("do pacman", 470, 150);
-    fill(pacColor);
-    text("U", 420, 190);
-    fill(255);
     text("Repõe a velocidade", 470, 180); 
     text("original do pacman", 470, 200);
     
     
     // seccao de outros comandos
-    fill(pacColor, 200);
+    fill(corPacman, 200);
     textSize(27);
     text("Outros", 470, 240);
     
-    // teclas e o seu significado
+    // teclas R e C
     textSize(20);
-    fill(pacColor);
+    fill(corPacman);
     text("R", 420, 270);
-    fill(255);
-    text("Repõe as pontuações", 470, 270);
-    fill(pacColor);
     text("C", 420, 300);
     fill(255);
-    text("Abre esta lista", 470, 300);
+    text("Repõe as pontuações", 470, 270);
+    text("Abre/Fecha esta lista", 470, 300);
     
   } else {  
     
@@ -364,9 +354,9 @@ void draw(){
     moverPacman();
     moverFantasmas();
     
-    if (paused) { 
-      // draw pause symbol on top of game
-      fill(pacColor);
+    if (pausa) { 
+      // desenhar simbolo da pausa em cima do jogo
+      fill(corPacman);
       noStroke();
       rect(width/2.3 - 2*margemH, 150, 4*margemH, height/3);
       rect(width/2.3 + 6*margemH, 150, 4*margemH, height/3);
@@ -375,11 +365,11 @@ void draw(){
 }
 
 void keyPressed() {
-  if (gameInstructions) {
-    gameInstructions = false;
+  if (instrucoes) {
+    instrucoes = false;
   } 
   if (key == CODED) { 
-    // pacman direction
+    // orientar pacman
     if (keyCode == UP) {
       orientarPacman(1);
     } else if (keyCode == DOWN) {
@@ -399,106 +389,104 @@ void keyPressed() {
     } else if (key == 'D' || key == 'd') {
       if (jogoIniciado) {
         orientarPacman(4);
-      } else { // dificulty seletor
-        startGame(dificil);
+      } else { // selecionar dificuldade dificil
+        comecarJogo(dificil);
       }
     }
     else if (key == 'M' || key == 'm'){ 
-      if (!jogoIniciado) { // dificulty selector
-        startGame(medio);
+      if (!jogoIniciado) { // selecionar dificuldade media
+        comecarJogo(medio);
       }
     } 
     
     else if (key == 'F' || key == 'f') {       // cheat codes
-      if (jogoIniciado) { // "F"reeze ghosts
-        cheatsUsed = true;
+      if (jogoIniciado) { // Congelar fantasmas
+        cheatsUsados = true;
         for (int i = 0; i < fantasmas; i++) {
           vFantasmas[i] = 0;
         } 
-      } else { // dificulty seletor
-        startGame(facil);
+      } else { // selecionar dificuldade facil
+        comecarJogo(facil);
       }
-    } else if (key == 'U' || key == 'u') { // "U"nfreeze ghosts
+    } else if (key == 'U' || key == 'u') { // Descongelar fantasmas
       vFantasmas[0] = 1.7; 
       vFantasmas[1] = 1.5; 
       vFantasmas[2] = 1.95; 
       vFantasmas[3] = 2.14;
     }
-    else if (key == 'E' || key == 'e') { // "E"at mode (pacman can eat ghosts)
-      if (!eatMode) {
-        cheatsUsed = true;
-        eatMode = true;
+    else if (key == 'E' || key == 'e') { // Ativa/Desativa no modo de comer fantasmas
+      if (!modoComer) {
+        cheatsUsados = true;
+        modoComer = true;
         for (int i = 0; i < fantasmas; i++) {
-          ghostColor[i] = color(2, 90, 232);
+          corFantasmas[i] = color(2, 90, 232);
         }
       } else {
         for (int i = 0; i < fantasmas; i++) {
-          if (ghostEaten[i]) {
+          if (fantasmaComido[i]) {
             switch (i) {
               case 0:
-                pFantasmas[0][0] = centroX(1);
-                pFantasmas[0][1] = centroY(1);
-                pFantasmas[0][2] = 4;
+                posFantasmas[0][0] = centroX(1);
+                posFantasmas[0][1] = centroY(1);
+                posFantasmas[0][2] = 4;
                 break;
               case 1:
-                pFantasmas[1][0] = centroX(1);
-                pFantasmas[1][1] = centroY(nLin);
-                pFantasmas[1][2] = 4;
+                posFantasmas[1][0] = centroX(1);
+                posFantasmas[1][1] = centroY(nLin);
+                posFantasmas[1][2] = 4;
                 break;
               case 2:
-                pFantasmas[2][0] = centroX(nCol);
-                pFantasmas[2][1] = centroY(1);
-                pFantasmas[2][2] = 3;
+                posFantasmas[2][0] = centroX(nCol);
+                posFantasmas[2][1] = centroY(1);
+                posFantasmas[2][2] = 3;
                 break;
               case 3:
-                pFantasmas[3][0] = centroX(nCol);
-                pFantasmas[3][1] = centroY(nLin);
-                pFantasmas[3][2] = 3;
+                posFantasmas[3][0] = centroX(nCol);
+                posFantasmas[3][1] = centroY(nLin);
+                posFantasmas[3][2] = 3;
                 break;
             }
   
-           ghostEaten[i] = false;
+           fantasmaComido[i] = false;
           }
         }
-        ghostColor[0] = color(66, 197, 244);
-        ghostColor[1] = color(244, 164, 66);
-        ghostColor[2] = color(244, 75, 66);
-        ghostColor[3] = color(247, 173, 211);
-        eatMode = false;
+        corFantasmas[0] = color(66, 197, 244);
+        corFantasmas[1] = color(244, 164, 66);
+        corFantasmas[2] = color(244, 75, 66);
+        corFantasmas[3] = color(247, 173, 211);
+        modoComer = false;
       }
     }
     
-    else if (key == '+' || key == 'V'|| key == 'v') { // increase "V"elocity
-      if (extraSpeed < dificuldade) {
-        cheatsUsed = true;
-        extraSpeed += 0.1;
+    else if (key == '+' || key == 'V'|| key == 'v') { // aumentar velocidade do pacman
+      if (velExtra < dificuldade) {
+        cheatsUsados = true;
+        velExtra += 0.1;
       }
-    } else if (key == '-') { // reset extra speed to 0
-      extraSpeed = 0;
+    } else if (key == '-') { // repor a velocidade extra do pacman da 0
+      velExtra = 0;
     }
     
-    else if (key == 'Y' || key == 'y') { // "Y"ellow
-      pacColor = color(232, 239, 40);
+    else if (key == 'Y' || key == 'y') { // tema original
+      corPacman = color(232, 239, 40);
       corObstaculos = color(100, 0 , 128);
-    } else if (key == 'G' || key == 'g') { // "G"reen
-      pacColor = color(20, 239, 40);
+    } else if (key == 'G' || key == 'g') { // tema verde
+      corPacman = color(20, 239, 40);
       corObstaculos = color(100, 255, 200);
-    } else if (key == 'I' || key == 'i') { // "I"nvert colors
-      pacColor = color(100, 0 , 128);
+    } else if (key == 'I' || key == 'i') { // tema invertido
+      corPacman = color(100, 0 , 128);
       corObstaculos = color(232, 239, 40);
-    } else if (key == 'B' || key == 'b') { 
-      // "B"lack (grey [= black and white] pacman and obstacles)
-      pacColor = color(140, 140, 140);
+    } else if (key == 'B' || key == 'b') { // tema cinzento
+      corPacman = color(140, 140, 140);
       corObstaculos = color(70, 70 , 70);
     }
 
-    else if (key == 'Q' || key == 'q') { // "Q"uit the game
+    else if (key == 'Q' || key == 'q' || key == 27) { // Sair do jogo, usando Q ou Esc
       perder();
     }
     else if (key == ' ' || key == 'P' || key == 'p') { 
-      // "P"ause and unpause the game
-      if (!paused) {
-        // pause
+      // Pausar e retomar o jogo
+      if (!pausa) { // pausar o jogo
         stopVel[0] = vx;
         stopVel[1] = vy;
         vx = 0;
@@ -506,7 +494,7 @@ void keyPressed() {
         for (int i = 0; i < fantasmas; i++) {
           vFantasmas[i] = 0; 
         }
-      } else { // unpause
+      } else { // retomar o jogo
         vx = stopVel[0];
         vy = stopVel[1];
         vFantasmas[0] = 1.7; 
@@ -514,97 +502,97 @@ void keyPressed() {
         vFantasmas[2] = 1.95; 
         vFantasmas[3] = 2.14;
       }
-      // toggle boolean flag
-      paused = !paused;
+      // mudar de estado
+      pausa = !pausa;
     }
     
-    if (key == 'R' || key == 'r') { // "R"eset highscores
+    if (key == 'R' || key == 'r') { // Repoe os highscores
       resetScores();
     }
     
-    if (key == 'C' || key == 'c') { // Pases games and shows a list of cheat codes
+    if (key == 'C' || key == 'c') { // Pausa o jogo e mostra a lista dos cheat codes
       if(cheatList) {
         cheatList = false;
-        paused = false;
+        pausa = false;
       } else {
         cheatList = true;
-        paused = true;
+        pausa = true;
       }
     }
   }
 }
 
 void mouseClicked() {
-  if (gameInstructions) {
-    gameInstructions = false;
+  if (instrucoes) {
+    instrucoes = false;
   } else if (cheatList) {
     cheatList = false;
-    paused = false;
+    pausa = false;
   } 
   if (!jogoIniciado && (mouseX >= 0) && (mouseX <= width*2/3)) {
      if ((mouseY >= 150) && (mouseY < 300)) { // facil
       nivel = "fácil";
-      startGame(facil);
+      comecarJogo(facil);
     } else if ((mouseY >= 300) && (mouseY < 420)) { // medio
       nivel = "médio";
-      startGame(medio);
+      comecarJogo(medio);
     } else if ((mouseY >= 420)) { // dificil
       nivel = "difícil";
-      startGame(dificil);
+      comecarJogo(dificil);
     }
   }
-  // if mouse clicked when on won or lost screens, skip remaining message time
-  if ((gameWon) || (gameLost)) {
-  // exit screens
-      gameWon = false;
-      gameLost = false;
-      // end game
+  // se o rato e clickado no ecra de vitoria ou derrota, ignorar o tempo restante da mensagem
+  if ((jogoGanho) || (jogoPerdido)) {
+  // sair dos ecras
+      jogoGanho = false;
+      jogoPerdido = false;
+      
       terminarJogo();
   }
 }
 
-// sets up several variables in order to start the game
-void startGame(float dif) {
-  // Repor as condicoes iniciais
-  gameInstructions = true;
-  foodCounter = 0;
+/* Inicializa varias variaveis e comeca o jogo */
+void comecarJogo(float dif) {
+  // repor as condicoes iniciais
+  instrucoes = true;
+  contadorComida = 0;
   dificuldade = dif;
   pontuacao = 0;
-  extraSpeed = 0;
+  velExtra = 0;
   
-  // Mudar para o som do jogo
-  menu.stop();
-  game.loop();
+  // mudar para o som do jogo
+  somMenu.stop();
+  somJogo.loop();
   
-  // Inicializar o Pacman
+  // inicializar o Pacman
   px = centroX(5);
   py = centroY(1);
   
-  // Inicializar os fantasmas
-  pFantasmas[0][0] = centroX(1);
-  pFantasmas[0][1] = centroY(1);
-  pFantasmas[0][2] = 4;
+  // inicializar os fantasmas
+  posFantasmas[0][0] = centroX(1);
+  posFantasmas[0][1] = centroY(1);
+  posFantasmas[0][2] = 4;
   
-  pFantasmas[1][0] = centroX(1);
-  pFantasmas[1][1] = centroY(nLin);
-  pFantasmas[1][2] = 4;
+  posFantasmas[1][0] = centroX(1);
+  posFantasmas[1][1] = centroY(nLin);
+  posFantasmas[1][2] = 4;
   
-  pFantasmas[2][0] = centroX(nCol);
-  pFantasmas[2][1] = centroY(1);
-  pFantasmas[2][2] = 3;
+  posFantasmas[2][0] = centroX(nCol);
+  posFantasmas[2][1] = centroY(1);
+  posFantasmas[2][2] = 3;
   
-  pFantasmas[3][0] = centroX(nCol);
-  pFantasmas[3][1] = centroY(nLin);
-  pFantasmas[3][2] = 3;
+  posFantasmas[3][0] = centroX(nCol);
+  posFantasmas[3][1] = centroY(nLin);
+  posFantasmas[3][2] = 3;
   
-  // Inicializar velocidades
+  // inicializar velocidades
   vx = 1 * dificuldade;
   vFantasmas[0] = 1.7; 
   vFantasmas[1] = 1.5; 
   vFantasmas[2] = 1.95; 
   vFantasmas[3] = 2.14;
   
-  // Ajustar velocidade dos fantasmas
+  // ajustar velocidade dos fantasmas
   if ((int)(dif*100) == (int)(facil*100)) {
     for (int i = 0; i < fantasmas; i++) {
       vFantasmas[i] -= 1;
@@ -615,8 +603,8 @@ void startGame(float dif) {
     }
   }
   
-  // run all the functions that make up the game one time before draw does,
-  // in order to set up food and ghost maps
+  // correr todas as funcoes que compoem o jogo uma vez antes de serem chamadas
+  // pela draw, de forma a inicializar os mapas dos fantasmas e da comida
   desenharLabirinto();
   
   // criar mapa de comida e de fantasmas
@@ -624,29 +612,29 @@ void startGame(float dif) {
     for (int j = 0; j < nLin; j++) {     
       color c = get((int)centroX(i+1), (int)centroY(j+1));
       if(c != corObstaculos) {
-          foodMap[i][j][0] = 1;
-          ghostMap[i+1][j+1][0] = 1;
-          foodCounter++;
+          mapaComida[i][j] = 1;
+          mapaFantasmas[i+1][j+1] = 1;
+          contadorComida++;
         } else {
-          foodMap[i][j][0] = 0;
-          ghostMap[i+1][j+1][0] = 0;
+          mapaComida[i][j] = 0;
+          mapaFantasmas[i+1][j+1] = 0;
         }
      
-      ghostMap[0][j+1][0] = 0;
-      ghostMap[nCol+1][j+1][0] = 1;
+      mapaFantasmas[0][j+1] = 0;
+      mapaFantasmas[nCol+1][j+1] = 1;
     }
   }
   
   // desativar qualquer cheat code
-  cheatsUsed = false;
-  paused = false;
-  eatMode = false;
-  ghostColor[0] = color(66, 197, 244);
-  ghostColor[1] = color(244, 164, 66);
-  ghostColor[2] = color(244, 75, 66);
-  ghostColor[3] = color(247, 173, 211);
+  cheatsUsados = false;
+  pausa = false;
+  modoComer = false;
+  corFantasmas[0] = color(66, 197, 244);
+  corFantasmas[1] = color(244, 164, 66);
+  corFantasmas[2] = color(244, 75, 66);
+  corFantasmas[3] = color(247, 173, 211);
   for (int i = 0; i < fantasmas; i++) {
-    ghostEaten[i] = false;
+    fantasmaComido[i] = false;
     dirObstaculoFantasma[i] = 0;
   }
   
@@ -666,8 +654,8 @@ void startGame(float dif) {
 /* Guarda a pontuacao e reinicia o jogo */
 void terminarJogo() {
   // mudar para o som do menu
-  game.stop();
-  menu.loop();
+  somJogo.stop();
+  somMenu.loop();
   
   // guardar pontuacao
   try {
@@ -683,34 +671,34 @@ void terminarJogo() {
         
         // ler as top 3 pontuacoes de cada categoria
         Scanner input = new Scanner(fout);
-        int[][] scoresArray = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
+        int[][] pontuacoes = {{0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}};
         while(input.hasNextLine()) {
           String line = input.nextLine();
           String[] parts = line.split(":");
           
-          int index = 3;
+          int indice = 3;
           switch (parts[0]) {
             case "Facil":
-              index = 0;
+              indice = 0;
               break;
             case "Medio":
-              index = 1;
+              indice = 1;
               break;
             case "Dificil":
-              index = 2;
+              indice = 2;
               break;
             // por omissao = foram usados cheat codes
           }
           for(int i = 0; i < 3; i++) {
             int temp = Integer.parseInt(parts[1]);
-            if (temp > scoresArray[index][i]) {
+            if (temp > pontuacoes[indice][i]) {
               if (i != 2) {
                 if (i == 0) {
-                  scoresArray[index][i+2] = scoresArray[index][i+1];
+                  pontuacoes[indice][i+2] = pontuacoes[indice][i+1];
                 }
-                scoresArray[index][i+1] = scoresArray[index][i];
+                pontuacoes[indice][i+1] = pontuacoes[indice][i];
               }
-              scoresArray[index][i] = temp; //<>//
+              pontuacoes[indice][i] = temp; //<>//
               break;
             }
           }
@@ -718,29 +706,29 @@ void terminarJogo() {
         input.close();
         
         // verficar se a pontucao deste jogo pertece ao top 3 da sua categoria
-        int currentGameIndex = 3;
-        if (!cheatsUsed) {
+        int indiceJogo = 3;
+        if (!cheatsUsados) {
           switch ((int)(dificuldade * 100)) {
             case 300:
-              currentGameIndex = 0;
+              indiceJogo = 0;
               break;
             case 270:
-              currentGameIndex = 1;
+              indiceJogo = 1;
               break;
             case 215:
-              currentGameIndex = 2;
+              indiceJogo = 2;
               break;
           }
         }
         for(int i = 0; i < 3; i++) {
-            if (pontuacao > scoresArray[currentGameIndex][i]) {
+            if (pontuacao > pontuacoes[indiceJogo][i]) {
               if (i != 2) {
                 if (i == 0) {
-                  scoresArray[currentGameIndex][i+2] = scoresArray[currentGameIndex][i+1];
+                  pontuacoes[indiceJogo][i+2] = pontuacoes[indiceJogo][i+1];
                 }
-                scoresArray[currentGameIndex][i+1] = scoresArray[currentGameIndex][i];
+                pontuacoes[indiceJogo][i+1] = pontuacoes[indiceJogo][i];
               }
-              scoresArray[currentGameIndex][i] = pontuacao;
+              pontuacoes[indiceJogo ][i] = pontuacao;
               break;
             }
           }
@@ -748,20 +736,20 @@ void terminarJogo() {
         
         // escrever as top 3 pontuacoes de cada categoria
         for (int i = 0; i < 4; i++) {
-          String header = "Com Cheat Codes:";
+          String cabecalho = "Com Cheat Codes:";
           switch (i){
             case 0:
-              header = "Facil:";
+              cabecalho = "Facil:";
               break;
             case 1:
-              header = "Medio:";
+              cabecalho = "Medio:";
               break;
             case 2:
-              header = "Dificil:";
+              cabecalho = "Dificil:";
               break;
           }
           for (int j = 0; j < 3; j++) {
-            highscores += header + String.valueOf(scoresArray[i][j]) + "\n";
+            highscores += cabecalho + String.valueOf(pontuacoes[i][j]) + "\n";
           }
         }
         
@@ -781,15 +769,15 @@ void terminarJogo() {
 /* Termina o jogo quando este foi ganho, mostrando uma mensagem de vitoria */
 void ganhar() {
   // mostar ecra de vitoria
-  screenDuration = millis();
-  gameWon = true;
+  duracaoEcra = millis();
+  jogoGanho = true;
 }
 
 /* Termina o jogo quando este foi perdido, mostrando uma mensagem de derrota */
 void perder() {
   // mostrar ecra de derrota
-  screenDuration = millis();
-  gameLost = true;
+  duracaoEcra = millis();
+  jogoPerdido = true;
 }
 
 void moverFantasmas() { 
@@ -804,83 +792,83 @@ void moverFantasmas() {
   
    for (int i = 0; i < fantasmas; i++) {
 
-     float pFx = pFantasmas[i][0];
-     float pFy = pFantasmas[i][1];
+     float pFx = posFantasmas[i][0];
+     float pFy = posFantasmas[i][1];
      
       int x = (int)Math.round((pFx + 0.5 - margemH/2)/tamanho);
       int y = (int)Math.round((pFy + 0.5 - margemV/1.5)/tamanho);
       
        // ajustar a posicao dos fantasmas, para criar um movimento mais fluido
-       if (pFantasmas[i][2] - 1 < 0.1) { // para cima
+       if (posFantasmas[i][2] - 1 < 0.1) { // para cima
          y = (int)Math.round((pFy + 0.5 - margemV*2)/tamanho) + 1;
-       } else if (pFantasmas[i][2] - 2 < 0.1) { // para baixo
+       } else if (posFantasmas[i][2] - 2 < 0.1) { // para baixo
          y = (int)Math.round((pFy + 0.5)/tamanho);
-       } else if (pFantasmas[i][2] - 3 < 0.1) { // para a esquerda
+       } else if (posFantasmas[i][2] - 3 < 0.1) { // para a esquerda
          x = (int)Math.round((pFx + 0.5 - margemH*2)/tamanho) + 1;
-       } else if (pFantasmas[i][2] - 4 < 0.1) { // para a direita
+       } else if (posFantasmas[i][2] - 4 < 0.1) { // para a direita
          x = (int)Math.round((pFx + 0.5 - margemH/2.4)/tamanho);
        } 
                                                                                                                                    
-     if (!obstacle[i]) {
+     if (!obstaculo[i]) {
        // perseguir pacman
-       if ((pacX - x < 0) && (ghostMap[x-1][y][0] == 1)) { // ir para a esquerda //<>//
+       if ((pacX - x < 0) && (mapaFantasmas[x-1][y] == 1)) { // ir para a esquerda //<>//
          pFx -= vFantasmas[i];
          pFy = centroY(y); 
-         pFantasmas[i][2] = 3;
-       } else if ((pacX - x > 0) && (ghostMap[x+1][y][0] == 1)) { // ir para a direita
+         posFantasmas[i][2] = 3;
+       } else if ((pacX - x > 0) && (mapaFantasmas[x+1][y] == 1)) { // ir para a direita
          pFx += vFantasmas[i];
          pFy = centroY(y); 
-         pFantasmas[i][2] = 4;
-       } else if ((pacY - y < 0) && (ghostMap[x][y-1][0] == 1)) { // ir para cima
+         posFantasmas[i][2] = 4;
+       } else if ((pacY - y < 0) && (mapaFantasmas[x][y-1] == 1)) { // ir para cima
          pFy -= vFantasmas[i];
          pFx = centroX(x); 
-         pFantasmas[i][2] = 1;
-       } else if ((pacY - y > 0) && (ghostMap[x][y+1][0] == 1)) { // ir para baixo
+         posFantasmas[i][2] = 1;
+       } else if ((pacY - y > 0) && (mapaFantasmas[x][y+1] == 1)) { // ir para baixo
          pFy += vFantasmas[i];
          pFx = centroX(x); 
-         pFantasmas[i][2] = 2;
+         posFantasmas[i][2] = 2;
        } else {
          if ((pacX - x < 0.5) && (pacX - x > -0.5) && (pacY - y < 0.5) && (pacY - y > -0.5)) {
            // certificar que um fantasma esta a tocar o pacman
-           if (get((int)px, (int)py) != pacColor) { 
-             if (!eatMode) {
+           if (get((int)px, (int)py) != corPacman) { 
+             if (!modoComer) {
                perder();
              } else { // comer fantasma
-               ghostEaten[i] = true;
+               fantasmaComido[i] = true;
                // verificar se todos os fantasmas foram comidos
-               boolean ateAll = true;
+               boolean comeuTodosFan = true;
                for (int j = 0; j < fantasmas; j++) {
-                 if (!ghostEaten[j]) {
-                   ateAll = false;
+                 if (!fantasmaComido[j]) {
+                   comeuTodosFan = false;
                  }
                }
-               if (ateAll) {
+               if (comeuTodosFan) {
                  ganhar();
                }
              }
            }
          } else {
-           obstacle[i] = true;
+           obstaculo[i] = true;
          } 
        }
      } else { 
        // ha um obstaculo entre o fantasma e o pacman
        if (dirObstaculoFantasma[i] == 0) { // o obstaculo esta a aparecer pela primeira vez
           if ((pacY != y)) {
-            if (((pFantasmas[i][2] - 1 < 0.1) && (pFantasmas[i][2] - 1 > -0.1) && (ghostMap[x][y-1][0] == 0)) || (pacY - y < 0)) { 
+            if (((posFantasmas[i][2] - 1 < 0.1) && (posFantasmas[i][2] - 1 > -0.1) && (mapaFantasmas[x][y-1] == 0)) || (pacY - y < 0)) { 
               // obstaculo esta acima do fantasma
               dirObstaculoFantasma[i] = 1; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);} // obs cima
-            else if (((pFantasmas[i][2] - 2 < 0.1) && (pFantasmas[i][2] - 2 > -0.1) && (ghostMap[x][y+1][0] == 0)) || (pacY - y > 0)) { 
+            else if (((posFantasmas[i][2] - 2 < 0.1) && (posFantasmas[i][2] - 2 > -0.1) && (mapaFantasmas[x][y+1] == 0)) || (pacY - y > 0)) { 
               // obstaculo esta abaixo do fantasma
               dirObstaculoFantasma[i] = 2; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);} // obs baixo
           } else if (pacX != x) {
-            if (((pFantasmas[i][2] - 3 < 0.1) && (pFantasmas[i][2] - 3 > -0.1) && (ghostMap[x-1][y][0] == 0)) || (pacX - x <= 0)) { 
+            if (((posFantasmas[i][2] - 3 < 0.1) && (posFantasmas[i][2] - 3 > -0.1) && (mapaFantasmas[x-1][y] == 0)) || (pacX - x <= 0)) { 
               // obstaculo esta a esquerda do fantasma
               dirObstaculoFantasma[i] = 3; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);
-            } else if (((pFantasmas[i][2] - 4 < 0.1) && (pFantasmas[i][2] - 4 > -0.1) && (ghostMap[x+1][y][0] == 0)) || (pacX - x > 0))  { 
+            } else if (((posFantasmas[i][2] - 4 < 0.1) && (posFantasmas[i][2] - 4 > -0.1) && (mapaFantasmas[x+1][y] == 0)) || (pacX - x > 0))  { 
               // obstaculo esta a direita do fantasma
               dirObstaculoFantasma[i] = 4; 
               contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);
@@ -890,8 +878,8 @@ void moverFantasmas() {
          contornarObstaculo(i, pacX, pacY, x, y, pFx, pFy);
        }
        
-     pFx = pFantasmas[i][0];
-     pFy = pFantasmas[i][1];
+     pFx = posFantasmas[i][0];
+     pFy = posFantasmas[i][1];
      
      }
      
@@ -910,8 +898,8 @@ void moverFantasmas() {
       pFy = centroY(y); 
     }
      
-     pFantasmas[i][0] = pFx;
-     pFantasmas[i][1] = pFy;
+     posFantasmas[i][0] = pFx;
+     posFantasmas[i][1] = pFy;
      
   }
 }
@@ -929,143 +917,143 @@ void moverPacman() {
  */
 void contornarObstaculo(int fantasma, int pacX, int pacY, int x, int y, float pFx, float pFy) {
 
-  if (dirObstaculoFantasma[fantasma] == 1) { // obstacle above
-     // while obstacle above
-     if(ghostMap[x][y-1][0] != 1) {
-     // move either left or right until obstacle is no longer above
-       if((ghostMap[x-1][y][0] == 1) && (ableLeft[fantasma])) {  // if pac is on the left
+  if (dirObstaculoFantasma[fantasma] == 1) {
+   // enquanto houver um obstaculo em cima do fantasma
+     if(mapaFantasmas[x][y-1] != 1) {
+     // ir para a esquerda ou para a direita ate deixar de existir um obstaculo em cima
+       if((mapaFantasmas[x-1][y] == 1) && (fanPodeEsq[fantasma])) {  // ir para a esquerda
          pFx -= vFantasmas[fantasma];
          pFy = centroY(y); 
-       } else if ((ghostMap[x+1][y][0] == 1) && (ableRight[fantasma])) { // go right
-         ableLeft[fantasma] = false;
+       } else if ((mapaFantasmas[x+1][y] == 1) && (fanPodeDir[fantasma])) { // ir para direita
+         fanPodeEsq[fantasma] = false;
          pFx += vFantasmas[fantasma];
          pFy = centroY(y); 
        } else {
-       // go down until able to go either left or rigt 
-         if (ghostMap[x][y+1][0] == 1) {
+       // ir para baixo ate ser possivel ir a esquerda ou para a direita
+         if (mapaFantasmas[x][y+1] == 1) {
            pFy += vFantasmas[fantasma];
            pFx = centroX(x); 
            
-           ableLeft[fantasma] = ghostMap[x-1][y][0] == 1;
-           ableRight[fantasma] = ghostMap[x+1][y][0] == 1;
+           fanPodeEsq[fantasma] = (mapaFantasmas[x-1][y] == 1);
+           fanPodeDir[fantasma] = (mapaFantasmas[x+1][y] == 1);
          }
        }
      }
      if (pacY - y <= 0){ // ir para cima
-       if (ghostMap[x][y-1][0] == 1) {
+       if (mapaFantasmas[x][y-1] == 1) {
          pFy -= vFantasmas[fantasma];
          pFx = centroX(x); 
-         pFantasmas[fantasma][2] = 1;
+         posFantasmas[fantasma][2] = 1;
        }
      } else {
-       obstacle[fantasma] = false;
+       obstaculo[fantasma] = false;
        dirObstaculoFantasma[fantasma] = 0;
      }
    } 
    
    else if (dirObstaculoFantasma[fantasma] == 2) {
-   // while obstacle below
-     if(ghostMap[x][y+1][0] != 1) { 
-     // move either left or right until obstacle is no longer below
-       if((ghostMap[x-1][y][0] == 1) && (ableLeft[fantasma])) {  // if pac is on the left
+   // enquanto houver um obstaculo em baixo do fantasma
+     if(mapaFantasmas[x][y+1] != 1) { 
+     // ir para a esquerda ou para a direita ate deixar de existir um obstaculo em baixo
+       if((mapaFantasmas[x-1][y] == 1) && (fanPodeEsq[fantasma])) {  // ir para a esquerda
          pFx -= vFantasmas[fantasma];
          pFy = centroY(y); 
-       } else if ((ghostMap[x+1][y][0] == 1) && (ableRight[fantasma])) { // go right
-         ableLeft[fantasma] = false;
+       } else if ((mapaFantasmas[x+1][y] == 1) && (fanPodeDir[fantasma])) { // ir para direita
+         fanPodeEsq[fantasma] = false;
          pFx += vFantasmas[fantasma];
          pFy = centroY(y); 
        } else {
-       // go up until able to go either left or rigt
-         if (ghostMap[x][y-1][0] == 1) {
+       // ir para cima ate ser possivel ir a esquerda ou para a direita
+         if (mapaFantasmas[x][y-1] == 1) {
            pFy -= vFantasmas[fantasma];
            pFx = centroX(x); 
            
-           ableLeft[fantasma] = ghostMap[x-1][y][0] == 1;
-           ableRight[fantasma] = ghostMap[x+1][y][0] == 1;
+           fanPodeEsq[fantasma] = (mapaFantasmas[x-1][y] == 1);
+           fanPodeDir[fantasma] = (mapaFantasmas[x+1][y] == 1);
          }
        }
      }
      if (pacY - y > 0) {  // ir para baixo
-       if (ghostMap[x][y+1][0] == 1) {
+       if (mapaFantasmas[x][y+1] == 1) {
          pFy += vFantasmas[fantasma];
          pFx = centroX(x); 
-         pFantasmas[fantasma][2] = 2;
+         posFantasmas[fantasma][2] = 2;
        }
      } else {
-       obstacle[fantasma] = false;
+       obstaculo[fantasma] = false;
        dirObstaculoFantasma[fantasma] = 0;
      }
    }
    
    else if (dirObstaculoFantasma[fantasma] == 3) {
      // enquanto houver um obstaculo a esquerda do fantasma
-     if(ghostMap[x-1][y][0] != 1) {
+     if(mapaFantasmas[x-1][y] != 1) {
        // ir para cima ou para baixo ate deixar de existir um obstaculo a direita do fantasma
-       if((ghostMap[x][y-1][0] == 1) && (ableUp[fantasma])) {   // ir para cima
+       if((mapaFantasmas[x][y-1] == 1) && (fanPodeCima[fantasma])) {   // ir para cima
          pFx = centroX(x); 
          pFy -= vFantasmas[fantasma];
-       } else if ((ghostMap[x][y+1][0] == 1) && (ableDown[fantasma])) {  // ir para baixo
-         ableUp[fantasma] = false;
+       } else if ((mapaFantasmas[x][y+1] == 1) && (fanPodeBaixo[fantasma])) {  // ir para baixo
+         fanPodeCima[fantasma] = false;
          pFx = centroX(x); 
          pFy += vFantasmas[fantasma];
        } else {
          // ir para a direita ate ser possivel ir para cima ou para baixo
-         if (ghostMap[x][y+1][0] == 1) {
+         if (mapaFantasmas[x][y+1] == 1) {
            pFx += vFantasmas[fantasma];
            pFy = centroY(y);
            
-           ableUp[fantasma] = ghostMap[x][y-1][0] == 1;
-           ableDown[fantasma] = ghostMap[x][y+1][0] == 1;
+           fanPodeCima[fantasma] = mapaFantasmas[x][y-1] == 1;
+           fanPodeBaixo[fantasma] = mapaFantasmas[x][y+1] == 1;
          }
        }
      }
      if (pacX - x <= 0){ // ir para a esquerda
-       if (ghostMap[x-1][y][0] == 1) {
+       if (mapaFantasmas[x-1][y] == 1) {
          pFx -= vFantasmas[fantasma];
          pFy = centroY(y); 
-         pFantasmas[fantasma][2] = 3;
+         posFantasmas[fantasma][2] = 3;
        }
      } else {
-       obstacle[fantasma] = false;
+       obstaculo[fantasma] = false;
        dirObstaculoFantasma[fantasma] = 0;
      }  
    } else { // dirObstaculoFantasma[fantasma] = 4  
      // enquanto houver um obstaculo a direita do fantasma
-     if(ghostMap[x+1][y][0] != 1) {
+     if(mapaFantasmas[x+1][y] != 1) {
        // ir para cima ou para baixo ate deixar de existir um obstaculo a direita do fantasma
-       if((ghostMap[x][y-1][0] == 1) && (ableUp[fantasma])) {  // ir para cima
+       if((mapaFantasmas[x][y-1] == 1) && (fanPodeCima[fantasma])) {  // ir para cima
          pFx = centroX(x); 
          pFy -= vFantasmas[fantasma];
-       } else if ((ghostMap[x][y+1][0] == 1) && (ableDown[fantasma])) { // ir para baixo
-         ableUp[fantasma] = false;
+       } else if ((mapaFantasmas[x][y+1] == 1) && (fanPodeBaixo[fantasma])) { // ir para baixo
+         fanPodeCima[fantasma] = false;
          pFx = centroX(x); 
          pFy += vFantasmas[fantasma];
        } else {
          // ir para a esquerda ate ser possivel ir para cima ou para baixo
-         if (ghostMap[x][y-1][0] == 1) {
+         if (mapaFantasmas[x][y-1] == 1) {
            pFx -= vFantasmas[fantasma];
            pFy = centroY(y);
            
-           ableUp[fantasma] = ghostMap[x][y-1][0] == 1;
-           ableDown[fantasma] = ghostMap[x][y+1][0] == 1;
+           fanPodeCima[fantasma] = (mapaFantasmas[x][y-1] == 1);
+           fanPodeBaixo[fantasma] = (mapaFantasmas[x][y+1] == 1);
          }
        }
      }
      if (pacX - x > 0){ // ir para a direita
-       if (ghostMap[x+1][y][0] == 1) {
+       if (mapaFantasmas[x+1][y] == 1) {
          pFx += vFantasmas[fantasma];
          pFy = centroY(y); 
-         pFantasmas[fantasma][2] = 4;
+         posFantasmas[fantasma][2] = 4;
        }
      } else {
-       obstacle[fantasma] = false;
+       obstaculo[fantasma] = false;
        dirObstaculoFantasma[fantasma] = 0;
      } 
    } 
      
  
-   pFantasmas[fantasma][0] = pFx;
-   pFantasmas[fantasma][1] = pFy;
+   posFantasmas[fantasma][0] = pFx;
+   posFantasmas[fantasma][1] = pFy;
 }
 
 
@@ -1080,14 +1068,14 @@ void orientarPacman(int direction) {
   
   // se o jogo estivar pausado, e uma tecla diretional 
   // tiver sido carregada, sair da pausa
-  if ((direction != 0 ) && (paused)) {
+  if ((direction != 0 ) && (pausa)) {
     vx = stopVel[0];
     vy = stopVel[1];
     vFantasmas[0] = 1.7; 
     vFantasmas[1] = 1.5; 
     vFantasmas[2] = 1.95; 
     vFantasmas[3] = 2.14;
-    paused = false;
+    pausa = false;
   }
          
   // mudar a direcao do pacman, se for o caso       
@@ -1101,7 +1089,7 @@ void orientarPacman(int direction) {
       // check for collisons
       if ((y > 1) && (get((int)centroX(x), (int)centroY(y-1)) != corObstaculos)) {
         vx = 0;
-        vy = -1 * (dificuldade + extraSpeed);
+        vy = -1 * (dificuldade + velExtra);
         px = centroX(x);
       } else {
         vx = 0;
@@ -1111,7 +1099,7 @@ void orientarPacman(int direction) {
     case 2: // baixo
       if ((y < nLin) && (get((int)centroX(x), (int)centroY(y+1)) != corObstaculos)) {
         vx = 0;
-        vy = 1 * (dificuldade + extraSpeed);
+        vy = 1 * (dificuldade + velExtra);
         px = centroX(x);
       } else {
         vx = 0;
@@ -1125,7 +1113,7 @@ void orientarPacman(int direction) {
       
       if ((x > 1) && (get((int)centroX(x-1), (int)centroY(y)) != corObstaculos)) {
         vy = 0;
-        vx = -1 * (dificuldade + extraSpeed);
+        vx = -1 * (dificuldade + velExtra);
         py = centroY(y); 
       } else {
         vx = 0;
@@ -1135,7 +1123,7 @@ void orientarPacman(int direction) {
     case 4: // direita    
       if ((x < nCol) && (get((int)centroX(x+1), (int)centroY(y)) != corObstaculos)) { //
         vy = 0;
-        vx = 1 * (dificuldade + extraSpeed);
+        vx = 1 * (dificuldade + velExtra);
         py = centroY(y); 
       } else {
         vx = 0;
@@ -1178,48 +1166,48 @@ void orientarPacman(int direction) {
 void desenharFantasmas() {
   
   for (int i = 0; i < fantasmas; i++) {
-    if (!ghostEaten[i]) {
-      fill(ghostColor[i]);
+    if (!fantasmaComido[i]) {
+      fill(corFantasmas[i]);
       float raioFant = pRaio/3.0;
-      pFantasmas[i][1] -= 3.5; // fazer o fantasma mais "alto" que o pacman
+      posFantasmas[i][1] -= 3.5; // fazer o fantasma mais "alto" que o pacman
       
       // desenhar corpo do fantasma
-      ellipse(pFantasmas[i][0], pFantasmas[i][1], pRaio, pRaio);
-      rect(pFantasmas[i][0] - pRaio/2.0, pFantasmas[i][1], pRaio, pRaio/1.5);
+      ellipse(posFantasmas[i][0], posFantasmas[i][1], pRaio, pRaio);
+      rect(posFantasmas[i][0] - pRaio/2.0, posFantasmas[i][1], pRaio, pRaio/1.5);
       
       // desenhar cauda do fantasma, composta por 3 circulos
-      ellipse(pFantasmas[i][0] - raioFant, pFantasmas[i][1] + pRaio/1.5, pRaio/3.0, pRaio/3.0);
-      ellipse(pFantasmas[i][0], pFantasmas[i][1] + pRaio/1.5, pRaio/3.0, pRaio/3.0);
-      ellipse(pFantasmas[i][0] + raioFant, pFantasmas[i][1] + pRaio/1.5, pRaio/3.0, pRaio/3.0);
+      ellipse(posFantasmas[i][0] - raioFant, posFantasmas[i][1] + pRaio/1.5, pRaio/3.0, pRaio/3.0);
+      ellipse(posFantasmas[i][0], posFantasmas[i][1] + pRaio/1.5, pRaio/3.0, pRaio/3.0);
+      ellipse(posFantasmas[i][0] + raioFant, posFantasmas[i][1] + pRaio/1.5, pRaio/3.0, pRaio/3.0);
       
       
       // adicionar olhos ao fantasma
       fill (255);
-      ellipse(pFantasmas[i][0] - pRaio/4.2, pFantasmas[i][1], pRaio/3, pRaio/2.5);
-      ellipse(pFantasmas[i][0] + pRaio/4.2, pFantasmas[i][1], pRaio/3, pRaio/2.5);
+      ellipse(posFantasmas[i][0] - pRaio/4.2, posFantasmas[i][1], pRaio/3, pRaio/2.5);
+      ellipse(posFantasmas[i][0] + pRaio/4.2, posFantasmas[i][1], pRaio/3, pRaio/2.5);
       
       // adicionar iris
       fill(88, 135, 211);
       float tamanhoIris = pRaio/5;
-      switch ((int)Math.round(pFantasmas[i][2])) {
+      switch ((int)Math.round(posFantasmas[i][2])) {
         case 1: // fantasma a andar para cima
-          ellipse(pFantasmas[i][0] - pRaio/4.2, pFantasmas[i][1] - pRaio/8, tamanhoIris, tamanhoIris);
-          ellipse(pFantasmas[i][0] + pRaio/4.2, pFantasmas[i][1] - pRaio/8, tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] - pRaio/4.2, posFantasmas[i][1] - pRaio/8, tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] + pRaio/4.2, posFantasmas[i][1] - pRaio/8, tamanhoIris, tamanhoIris);
           break;
         case 2: // fantasma a andar para baixo
-          ellipse(pFantasmas[i][0] - pRaio/4.2, pFantasmas[i][1] + pRaio/8, tamanhoIris, tamanhoIris);
-          ellipse(pFantasmas[i][0] + pRaio/4.2, pFantasmas[i][1] + pRaio/8, tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] - pRaio/4.2, posFantasmas[i][1] + pRaio/8, tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] + pRaio/4.2, posFantasmas[i][1] + pRaio/8, tamanhoIris, tamanhoIris);
           break;
         case 3: // fantasma a andar para a esquerda
-          ellipse(pFantasmas[i][0] - pRaio/4.2 - pRaio/10, pFantasmas[i][1], tamanhoIris, tamanhoIris);
-          ellipse(pFantasmas[i][0] + pRaio/4.2 - pRaio/10, pFantasmas[i][1], tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] - pRaio/4.2 - pRaio/10, posFantasmas[i][1], tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] + pRaio/4.2 - pRaio/10, posFantasmas[i][1], tamanhoIris, tamanhoIris);
           break;
         case 4: // fantasma a andar para a direita
-          ellipse(pFantasmas[i][0] - pRaio/4.2 + pRaio/10, pFantasmas[i][1], tamanhoIris, tamanhoIris);
-          ellipse(pFantasmas[i][0] + pRaio/4.2 + pRaio/10, pFantasmas[i][1], tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] - pRaio/4.2 + pRaio/10, posFantasmas[i][1], tamanhoIris, tamanhoIris);
+          ellipse(posFantasmas[i][0] + pRaio/4.2 + pRaio/10, posFantasmas[i][1], tamanhoIris, tamanhoIris);
           break;
       }
-      pFantasmas[i][1] += 3.5; // compensar o ajuste da altura do fantasma
+      posFantasmas[i][1] += 3.5; // compensar o ajuste da altura do fantasma
     }
   }
 }
@@ -1238,19 +1226,18 @@ void comerPontos() {
   }
 
   color c = get((int)centroX(x), (int)centroY(y));
-  color white = color(255, 255 , 255);
   
   // se for comida (ponto branco), comer
-  if (c == white) {  
-    if (foodMap[x-1][y-1][0] == 1) {
-      foodMap[x-1][y-1][0] = 0;
-      foodCounter--;
+  if (c == color(255, 255 , 255)) {  
+    if (mapaComida[x-1][y-1] == 1) {
+      mapaComida[x-1][y-1] = 0;
+      contadorComida--;
       
         // subir pontuacao
         pontuacao += 100 * (5/dificuldade);
         
         // verificar se o jogo foi ganho
-        if (foodCounter == 0) {
+        if (contadorComida == 0) {
           ganhar();
         }
     }
@@ -1265,7 +1252,7 @@ void comerPontos() {
  * se o pacman anda da direita para esquerda
  */
 void desenharPacman() {
-  fill(pacColor);
+  fill(corPacman);
   ellipseMode(CENTER);
   noStroke();
   if (vy == 0) {
@@ -1379,7 +1366,7 @@ void desenharPontos() {
   // se o ponto esta no array, desenhar
   for (int i = 0; i < nCol; i++) {
     for (int j = 0; j < nLin; j++) {
-      if (foodMap[i][j][0] == 1) {
+      if (mapaComida[i][j] == 1) {
         ellipse(centroX(i+1), centroY(j+1), pRaio/2, pRaio/2);
       }
     }
@@ -1417,7 +1404,6 @@ void resetScores() {
 
 // TODO
 // passar todo o codigo para pt
-// sair da pausa quando se carrega numa tecla direticional
 
 // WISHLIST
 // improve even more ghost ai
