@@ -482,7 +482,10 @@ void keyPressed() {
     }
 
     else if (key == 'Q' || key == 'q' || key == 27) { // Sair do jogo, usando Q ou Esc
-      perder();
+      if(jogoIniciado) {
+        perder();
+      }
+      key = 0; // se a tecla for Esc, impede que se saia do jogo
     }
     else if (key == ' ' || key == 'P' || key == 'p') { 
       // Pausar e retomar o jogo
