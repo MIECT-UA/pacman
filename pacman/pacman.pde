@@ -21,7 +21,7 @@ int fantasmas = 4; // nº de fantasmas
 float[][] posFantasmas = new float[fantasmas][3]; // posicoes dos fantasmas
 color[] corFantasmas = {color(66, 197, 244) /* azul */, color(244, 164, 66)/* laranja */, 
                       color(244, 75, 66)/* vermelho */, color(247, 173, 211)/* rosa */};
-float[] vFantasmas = {1.7, 1.5, 1.95, 2.1}; // velocidades dos fantasmas
+float[] vFantasmas = {1.7, 1.5, 1.95, 2}; // velocidades dos fantasmas
 int[][] mapaFantasmas;
 boolean[] obstaculo = {false, false, false, false}; // se um dos fantasmas se encontra a contornar um obstaculo
 // se os fantasmas tem ou nao um obstaculo na respetiva direcao
@@ -833,7 +833,15 @@ void moverFantasmas() {
        } else {
          if ((pacX - x < 0.5) && (pacX - x > -0.5) && (pacY - y < 0.5) && (pacY - y > -0.5)) {
            // certificar que um fantasma esta a tocar o pacman
-           if (get((int)px, (int)py) != corPacman) { 
+           boolean pacComido = false;
+           for (int j = 0; j < fantasmas; j++) {
+             if ((get((int)px, (int)py) == corFantasmas[i]) || (get((int)(px + pRaio), (int)py) == corFantasmas[i])
+                 || (get((int)(px - pRaio), (int)py) == corFantasmas[i]) || (get((int)px, (int)(py + pRaio)) == corFantasmas[i]) 
+                 || (get((int)px, (int)(py - pRaio)) == corFantasmas[i])) {
+               pacComido = true;
+             }
+           }
+           if (pacComido) { 
              if (!modoComer) {
                perder();
              } else { // comer fantasma
