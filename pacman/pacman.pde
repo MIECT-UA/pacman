@@ -39,11 +39,13 @@ boolean jogoGanho = false;
 boolean jogoPerdido = false;
 boolean instrucoes = false;
 
-// vairaveis que controlam o nivel de dificuldade e a pontuacao
+// vairaveis que controlam o nivel de dificuldade, a pontuacao, e o mapa usado
 float dificuldade;
 float facil = 3.0, medio = 2.70, dificil = 2.15;
 String nivel = "";
 int pontuacao = 0;
+int numMapas = 4; // apesar de haver 5 mapas, contamos tambem o caso 0
+int mapa = 0;
 
 // variaveis relacionadas com imagens e sons
 PImage introPacImg;
@@ -562,6 +564,9 @@ void comecarJogo(float dif) {
   dificuldade = dif;
   pontuacao = 0;
   velExtra = 0;
+  
+  // escolher um mapa aleatoriamente
+  mapa = (int)(Math.random() * (numMapas + 1));
   
   // mudar para o som do jogo
   somMenu.stop();
@@ -1292,54 +1297,100 @@ void desenharLabirinto () {
   strokeWeight(espacamento);
   rect(margemH, margemV, width - 2*margemH, height - 2*margemV);
 
-  // Desenha obstáculos
-  if (dificuldade == facil) { // mapa facil
-    desenharObstaculo(2, 2, 3, 1);
-    desenharObstaculo(6, 2, 3, 1);
-    desenharObstaculo(10, 2, 3, 1);
-    desenharObstaculo(2, 4, 5, 1);
-    desenharObstaculo(8, 4, 6, 1);
-    desenharObstaculo(7,6, 1, 1);
-    desenharObstaculo(2,6, 3, 2);
-    desenharObstaculo(2,9, 6, 1);
-    desenharObstaculo(9,6, 1, 4);
-    desenharObstaculo(11, 6, 1, 1);
-    desenharObstaculo(11, 9, 1, 1);
-    desenharObstaculo(13, 6, 1, 4);
-  }  else if (dificuldade == medio) {
-    // mapa medio
-    desenharObstaculo(5, 4, 6, 1);
-    desenharObstaculo(3, 2, 4, 1);
-    desenharObstaculo(3, 2, 1, 2);
-    desenharObstaculo(9, 2, 4, 1);
-    desenharObstaculo(12, 2, 1, 2);
-    desenharObstaculo(2, 6, 5, 1);
-    desenharObstaculo(2, 5, 1, 2);
-    desenharObstaculo(9, 6, 5, 1);
-    desenharObstaculo(13, 5, 1, 2);
-    desenharObstaculo(7, 8, 2, 1);
-    desenharObstaculo(2, 8, 2, 1);
-    desenharObstaculo(2, 8, 1, 2);
-    desenharObstaculo(12, 8, 2, 1);
-    desenharObstaculo(13, 8, 1, 2);
-    desenharObstaculo(5, 10, 6, 1);
-    desenharObstaculo(5, 9, 1, 2);
-    desenharObstaculo(10, 9, 1, 2);
-  }  else {
-    // mapa dificil
-    desenharObstaculo(2, 2, 5, 1);
-    desenharObstaculo(13, 2, 1, 1);
-    desenharObstaculo(8, 2, 4, 1); 
-    desenharObstaculo(3, 4, 1, 3);
-    desenharObstaculo(5, 4, 1, 5);
-    desenharObstaculo(8, 4, 1, 3);
-    desenharObstaculo(2, 8, 2, 1);
-    desenharObstaculo(1, 4, 1, 3);
-    desenharObstaculo(7, 8, 5, 1);
-    desenharObstaculo(2, 10, 12, 1);
-    desenharObstaculo(13, 6, 1, 3);
-    desenharObstaculo(11, 6, 3, 1);
-    desenharObstaculo(10, 4, 4, 1); 
+  // Desenhar um dos mapas disponiveis, dependendo do numero sorteado na
+  // funcao startGame()
+  switch (mapa) {
+    case 0:
+      desenharObstaculo(2, 2, 3, 1);
+      desenharObstaculo(6, 2, 3, 1);
+      desenharObstaculo(10, 2, 3, 1);
+      desenharObstaculo(2, 4, 5, 1);
+      desenharObstaculo(8, 4, 6, 1);
+      desenharObstaculo(7,6, 1, 1);
+      desenharObstaculo(2,6, 3, 2);
+      desenharObstaculo(2,9, 6, 1);
+      desenharObstaculo(9,6, 1, 4);
+      desenharObstaculo(11, 6, 1, 1);
+      desenharObstaculo(11, 9, 1, 1);
+      desenharObstaculo(13, 6, 1, 4);
+      break;
+    case 1:
+      desenharObstaculo(5, 4, 6, 1);
+      desenharObstaculo(3, 2, 4, 1);
+      desenharObstaculo(3, 2, 1, 2);
+      desenharObstaculo(9, 2, 4, 1);
+      desenharObstaculo(12, 2, 1, 2);
+      desenharObstaculo(2, 6, 5, 1);
+      desenharObstaculo(2, 5, 1, 2);
+      desenharObstaculo(9, 6, 5, 1);
+      desenharObstaculo(13, 5, 1, 2);
+      desenharObstaculo(7, 8, 2, 1);
+      desenharObstaculo(2, 8, 2, 1);
+      desenharObstaculo(2, 8, 1, 2);
+      desenharObstaculo(12, 8, 2, 1);
+      desenharObstaculo(13, 8, 1, 2);
+      desenharObstaculo(5, 10, 6, 1);
+      desenharObstaculo(5, 9, 1, 2);
+      desenharObstaculo(10, 9, 1, 2);
+      break;
+    case 2:
+      desenharObstaculo(2, 2, 5, 1);
+      desenharObstaculo(13, 2, 1, 1);
+      desenharObstaculo(8, 2, 4, 1); 
+      desenharObstaculo(3, 4, 1, 3);
+      desenharObstaculo(5, 4, 1, 5);
+      desenharObstaculo(8, 4, 1, 3);
+      desenharObstaculo(2, 8, 2, 1);
+      desenharObstaculo(1, 4, 1, 3);
+      desenharObstaculo(7, 8, 5, 1);
+      desenharObstaculo(2, 10, 12, 1);
+      desenharObstaculo(13, 6, 1, 3);
+      desenharObstaculo(11, 6, 3, 1);
+      desenharObstaculo(10, 4, 4, 1); 
+      break;
+    case 3:
+      desenharObstaculo(8, 1, 2, 1);
+      desenharObstaculo(2, 2, 3, 1);
+      desenharObstaculo(3, 3, 1, 1);
+      desenharObstaculo(2, 5, 1, 2);
+      desenharObstaculo(2, 8, 1, 2);
+      desenharObstaculo(4, 5, 1, 3);
+      desenharObstaculo(5, 6, 1, 1);
+      desenharObstaculo(4, 9, 1, 1);
+      desenharObstaculo(6, 2, 1, 3);
+      desenharObstaculo(6, 9, 2, 1);
+      desenharObstaculo(7, 7, 1, 2);
+      desenharObstaculo(8, 3, 1, 3);
+      desenharObstaculo(9, 4, 1, 1);
+      desenharObstaculo(9, 8, 1, 2);
+      desenharObstaculo(10, 6, 3, 1);
+      desenharObstaculo(11, 5, 1, 1);
+      desenharObstaculo(11, 8, 1, 1);
+      desenharObstaculo(12, 3, 1, 1);
+      desenharObstaculo(13, 2, 1, 3);
+      desenharObstaculo(13, 8, 1, 2);
+      break;
+     default: // mapa 4
+      desenharObstaculo(1, 6, 1, 3);
+      desenharObstaculo(2, 3, 1, 1);
+      desenharObstaculo(3, 2, 1, 2);
+      desenharObstaculo(3, 5, 1, 3);
+      desenharObstaculo(3, 9, 2, 1);
+      desenharObstaculo(4, 5, 1, 1);
+      desenharObstaculo(5, 2, 1, 2);
+      desenharObstaculo(6, 7, 3, 1);
+      desenharObstaculo(6, 9, 2, 1);
+      desenharObstaculo(7, 2, 3, 1);
+      desenharObstaculo(7, 5, 1, 1);
+      desenharObstaculo(9, 3, 1, 1);
+      desenharObstaculo(9, 9, 1, 3);
+      desenharObstaculo(11, 2, 1, 1);
+      desenharObstaculo(11, 4, 1, 3);
+      desenharObstaculo(11, 8, 1, 1);
+      desenharObstaculo(13, 2, 1, 2);
+      desenharObstaculo(13, 7, 1, 1);
+      desenharObstaculo(13, 9, 2, 1);
+      desenharObstaculo(14, 5, 1, 3);
   }
   
 }
@@ -1410,15 +1461,3 @@ void resetScores() {
         e.printStackTrace();
       }
 }
-
-
-
-// TODO
-// passar todo o codigo para pt
-
-// WISHLIST
-// improve even more ghost ai
-
-// BUGS
-// jumpy movement (for pac and ghosts) -> can cause unfair and frustrating loss
-// pacman can on rare intances go through ghost without being eaten
